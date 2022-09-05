@@ -4,6 +4,7 @@
 强行翻译后，自动使用谷歌翻译再给翻译回中文，以对比翻译效果。
 
 中英字典：[CEDict](https://www.mdbg.net/chinese/dictionary?page=cc-cedict)
+
 CEDICT - Copyright (C) 1997, 1998 Paul Andrew Denisowski
 
 AI语法纠正器：[Caribe](https://pypi.org/project/Caribe/)
