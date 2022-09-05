@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*
+import os
 import json
+
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 ctdict = {}
 cedict = {}

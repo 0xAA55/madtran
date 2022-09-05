@@ -8,12 +8,18 @@ import random
 import Caribe # 需要 Python 有 sqlite3 模块
 from pypinyin import pinyin, Style
 
+USE_PROXY = True
+PROXY_ADDR = "localhost"
+PROXY_PORT = 1080
+
 if __name__ == '__main__':
 	cedict_url = "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.zip"
-	cedict_zipfile = "cedict_1_0_ts_utf-8_mdbg.zip"
+	def makepath(filename):
+		return os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
+	cedict_zipfile = makepath("cedict_1_0_ts_utf-8_mdbg.zip")
 	cedict_member = "cedict_ts.u8"
-	cedict_srcfile = "cedict.txt"
-	cedict_pyfile = "cedict_database.py"
+	cedict_srcfile = makepath("cedict.txt")
+	cedict_pyfile = makepath("cedict_database.py")
 	if os.path.exists(cedict_pyfile) and time.time() - os.path.getmtime(cedict_pyfile) > 86400:
 		print("正在更新字典。")
 		os.remove(cedict_pyfile)
@@ -27,22 +33,22 @@ if __name__ == '__main__':
 	if not os.path.exists(cedict_pyfile):
 		if not os.path.exists(cedict_zipfile):
 			import requests
-			proxies = {
-				"http": "socks5h://localhost:1080",
-				"https": "socks5h://localhost:1080",
-			}
-			try:
-				resp = requests.get(cedict_url, proxies=proxies)
-			except requests.exceptions.ConnectionError as ec:
-				print("下载中英字典过程中发生代理连接失败，尝试无代理连接。")
+			if USE_PROXY:
+				proxies = {
+					"http": "socks5h://%s:%d" % (PROXY_ADDR, PROXY_PORT),
+					"https": "socks5h://%s:%d" % (PROXY_ADDR, PROXY_PORT)
+				}
+				resp = None
+				try:
+					resp = requests.get(cedict_url, proxies=proxies)
+				except requests.exceptions.ConnectionError as ec:
+					print("下载中英字典过程中发生代理连接失败，尝试无代理连接。")
+			if resp is None:
 				try:
 					resp = requests.get(cedict_url)
 				except:
 					print("下载中英字典失败，HTTP连接失败。")
 					exit()
-			except:
-				print("下载中英字典失败，HTTP连接失败。")
-				exit()
 			if 200 <= resp.status_code < 300:
 				print("下载字典成功。")
 				with open(cedict_zipfile, 'wb') as f:
@@ -58,8 +64,9 @@ if __name__ == '__main__':
 				z.extract(cedict_member)
 			os.rename(cedict_member, cedict_srcfile)
 
+		print("正在解析CEDict")
 		import subprocess
-		subprocess.run([sys.executable, "cedict_parse.py"])
+		subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.realpath(__file__)), "cedict_parse.py")])
 
 	print("正在加载字典。")
 from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
@@ -362,7 +369,7 @@ if __name__ == '__main__':
 	corrected = Caribe.caribe_corrector(result_string)
 
 	# 再用正经翻译软件翻译回来
-	proxy = SyncHTTPProxy((b"http", b"localhost", 1080, b""))
+	proxy = SyncHTTPProxy((b"http", PROXY_ADDR.encode('utf-8'), PROXY_PORT, b""))
 	translator = googletrans.Translator(proxies={"http" : proxy, "https" : proxy})
 	try:
 		translated = translator.translate(corrected, dest='zh-cn').text
