@@ -59,7 +59,7 @@ if __name__ == '__main__':
 			os.rename(cedict_member, cedict_srcfile)
 
 		import subprocess
-		subprocess.run(["python", "cedict_parse.py"])
+		subprocess.run([sys.executable, "cedict_parse.py"])
 
 	print("正在加载字典。")
 from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
@@ -201,7 +201,7 @@ def get_best_random_expl(word):
 	for pron, comments in expl.items():
 		upron = pron.upper()
 		if upron not in expl: upperlook[upron] = comments
-	expl |= upperlook
+	expl = {**expl, **upperlook}
 	# 先找到所有相关的候选词
 	cand = set()
 	seealsos = set()
