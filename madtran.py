@@ -5,7 +5,7 @@ import sys
 import json
 import time
 import random
-import Caribe # 需要 Python 有 sqlite3 模块
+import Caribe # 需要 Python 有 sqlite3 模块且能安装 torch
 from pypinyin import pinyin, Style
 
 USE_PROXY = True
@@ -369,8 +369,12 @@ if __name__ == '__main__':
 	corrected = Caribe.caribe_corrector(result_string)
 
 	# 再用正经翻译软件翻译回来
-	proxy = SyncHTTPProxy((b"http", PROXY_ADDR.encode('utf-8'), PROXY_PORT, b""))
-	translator = googletrans.Translator(proxies={"http" : proxy, "https" : proxy})
+	if USE_PROXY:
+		proxy = SyncHTTPProxy((b"http", PROXY_ADDR.encode('utf-8'), PROXY_PORT, b""))
+		proxies = {"http" : proxy, "https" : proxy}
+	else:
+		proxies = None
+	translator = googletrans.Translator(proxies=proxies)
 	try:
 		translated = translator.translate(corrected, dest='zh-cn').text
 	except:
