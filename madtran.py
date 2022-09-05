@@ -68,7 +68,6 @@ if __name__ == '__main__':
 		import subprocess
 		subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.realpath(__file__)), "cedict_parse.py")])
 
-	print("正在加载字典。")
 from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
 
 full2half = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
@@ -294,6 +293,7 @@ def get_best_random_expl(word):
 	return word, True
 
 def madtran(text):
+	# 根据可能的词语长度，截取输入的句子来查字典找释义。
 	search_range = [2, 3, 4, 5, 1] + list(range(6, cedict_maxkeylen + 1))
 	trans = []
 	text = text.replace('\n', ' ')
@@ -314,7 +314,7 @@ def madtran(text):
 				text = text[wl:]
 				status = True
 				break
-		# 没查到，则直接把单字作为结果。
+		# 没查到，则直接把单字作为结果（跳过这个字）。
 		if status == False:
 			trans += [(text[0], text[0].translate(full2half))]
 			text = text[1:]
