@@ -338,6 +338,21 @@ def usage():
 	print("强行翻译后，自动使用谷歌翻译再给翻译回中文，以对比翻译效果。")
 	exit()
 
+class redirect_std_streams(object):
+    def __init__(self, stdout=None, stderr=None):
+        self._stdout = stdout or sys.stdout
+        self._stderr = stderr or sys.stderr
+
+    def __enter__(self):
+        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+        self.old_stdout.flush(); self.old_stderr.flush()
+        sys.stdout, sys.stderr = self._stdout, self._stderr
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._stdout.flush(); self._stderr.flush()
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
+
 if __name__ == '__main__':
 	import googletrans
 	from httpcore import SyncHTTPProxy
@@ -366,7 +381,8 @@ if __name__ == '__main__':
 
 	# 进行一个句子纠正
 	print("正在进行AI纠正。")
-	corrected = Caribe.caribe_corrector(result_string)
+	with redirect_std_streams(stdout=sys.stderr):
+		corrected = Caribe.caribe_corrector(result_string)
 
 	# 再用正经翻译软件翻译回来
 	if USE_PROXY:
