@@ -363,14 +363,6 @@ if __name__ == '__main__':
 	# 我们的按词翻译方案
 	trans = madtran(text)
 	tranwords = "|".join(["%s -> %s" % kv if "".join(kv) != '  ' else "空格" for kv in trans])
-	trancomm = []
-	def show_comment(comset, prompt, delim='，'):
-		if comset is not None and len(comset):
-			print("%s%s" % (prompt, delim.join(comset)))
-	show_comment(altered, "转义查询：")
-	show_comment(extended, "扩展查询：")
-	show_comment(self_directed, "仅自引用项：")
-	show_comment(removed_particles, "移除的字典释义：")
 	result_string = get_result_string(trans)
 
 	# 检查是否有输出
@@ -380,7 +372,7 @@ if __name__ == '__main__':
 		exit()
 
 	# 进行一个句子纠正
-	print("正在进行AI纠正。")
+	print("已完成莽夫式翻译，正在进行AI纠正。")
 	with redirect_std_streams(stdout=sys.stderr):
 		corrected = Caribe.caribe_corrector(result_string)
 
@@ -395,9 +387,17 @@ if __name__ == '__main__':
 		translated = translator.translate(corrected, dest='zh-cn').text
 	except:
 		translated = "调用谷歌翻译失败。"
-
+		
 	print("原文：%s" % (text))
-	print("原始结果：\n%s" % (tranwords))
+	def show_comment(comset, prompt, delim='，'):
+		if comset is not None and len(comset):
+			print("%s%s" % (prompt, delim.join(comset)))
+	show_comment(altered, "转义查询：")
+	show_comment(extended, "扩展查询：")
+	show_comment(self_directed, "仅自引用项：")
+	show_comment(removed_particles, "移除的字典释义：")
+	print("莽夫式翻译结果：\n%s" % (tranwords))
+
 	if len(result_string) >= 200:
 		print("AI语法纠正：%s" % (corrected))
 	else:
