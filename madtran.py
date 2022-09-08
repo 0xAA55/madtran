@@ -125,7 +125,8 @@ def get_related_words(word):
 
 also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
 unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier for ', 'interjection of ' ]
-to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth' ]
+to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...' ]
+to_remove_ending_punct = set(';.?!')
 
 particle_checkers_starting = [
 	"particle expressing ",
@@ -229,8 +230,8 @@ def get_best_random_expl(word):
 	# 检查内容是不是需要的
 	def check_comment(comment):
 		nonlocal cand, seealsos
-		# 去掉括弧里的内容
-		comment = remove_parenthesis(comment).strip()
+		# 去掉括弧里的内容，并截断逗号后面的内容
+		comment = remove_parenthesis(comment).split(',', 1)[0].strip()
 		if len(comment) == 0:
 			return
 
@@ -319,6 +320,15 @@ def madtran(text):
 			trans += [(text[0], text[0].translate(full2half))]
 			text = text[1:]
 			continue
+	# 翻译出结果后，除最后一个单词，其余的单词的释义里的一些句尾符号要去除
+	for i in range(len(trans) - 1):
+		text, tran = trans[i]
+		if text == tran: continue
+		# 如果原单词里不包含标点，那么应当去除翻译后的单词里的标点
+		if len(set(text) & to_remove_ending_punct) == 0:
+			for punct in to_remove_ending_punct:
+				tran = tran.replace(punct, ' ')
+			trans[i] = (text, tran.strip())
 	return trans
 
 def get_result_string(trans):
@@ -387,7 +397,7 @@ if __name__ == '__main__':
 		translated = translator.translate(corrected, dest='zh-cn').text
 	except:
 		translated = "调用谷歌翻译失败。"
-		
+
 	print("原文：%s" % (text))
 	def show_comment(comset, prompt, delim='，'):
 		if comset is not None and len(comset):
