@@ -72,10 +72,8 @@ from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
 
 full2half = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
 full2half[0x3000] = 0x20
-altered = None
-extended = None
-self_directed = None
-removed_particles = None
+extended = set()
+removed_expl = set()
 
 def remove_parenthesis(comments):
 	result = ""
@@ -103,12 +101,10 @@ def lookup(word):
 			pass
 
 def get_related_words(word):
-	global extended
 	related = set()
 	keys = list(cedict.keys() | ctdict.keys())
 	keys.sort(key=len)
 	curlen = len(word)
-	exkeys = set()
 	for key in keys:
 		if key.startswith(word) and key != word:
 			newlen = len(key)
@@ -116,15 +112,11 @@ def get_related_words(word):
 				break
 			related |= {key}
 			curlen = newlen
-			exkeys |= {key}
-	exkeys = list(exkeys)[:8]
-	if len(exkeys):
-		if extended is None: extended = set()
-		extended |= {("%s -> %s" % (word, "、".join(exkeys))).strip()}
 	return related
 
 also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
 unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier for ', 'interjection of ' ]
+relation_checkers = [('单', 'unit of ')]
 to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...' ]
 to_remove_ending_punct = set(';.?!')
 
@@ -170,6 +162,12 @@ def is_unwanted(comment):
 			return True
 	return False
 
+def is_unrelated(text, comment):
+	for chkey, chcom in relation_checkers:
+		if chkey not in text and chcom in comment:
+			return True
+	return False
+
 def get_seealso(comment):
 	alsos = set()
 	also = None
@@ -193,6 +191,7 @@ def get_seealso(comment):
 	return alsos
 
 def get_best_random_expl(word):
+	global extended, removed_expl
 	scwords = {word}
 	try:
 		scwords |= ctdict[word]
@@ -230,8 +229,12 @@ def get_best_random_expl(word):
 	# 检查内容是不是需要的
 	def check_comment(comment):
 		nonlocal cand, seealsos
+		global extended, removed_expl
+
 		# 去掉括弧里的内容，并截断逗号后面的内容
 		comment = remove_parenthesis(comment).split(',', 1)[0].strip()
+		coms = {comment}
+		removed_expl |= coms # 先添加到“已移除项”
 		if len(comment) == 0:
 			return
 
@@ -245,12 +248,17 @@ def get_best_random_expl(word):
 			seealsos |= seealso
 			return
 
+		# 去掉关联性匹配失败的内容
+		if is_unrelated(word, comment):
+			return
+
 		# 去掉其余不想要的内容
 		if is_unwanted(comment):
 			return
 
 		# 筛选需要的
 		cand |= {comment}
+		removed_expl -= coms # 实际上没有被移除时，从“已移除项”里移除。
 
 	# 找到后，处理每一个解释项，删掉不要的解释项，并记录“另见”
 	for comment in try_match_pinyin(expl):
@@ -275,6 +283,8 @@ def get_best_random_expl(word):
 	# 如果还没有找到符合条件的选项（没有可用的 seealsos ）则找相关词
 	if len(cand) == 0:
 		relateds = get_related_words(word)
+		if len(relateds):
+			extended |= {("%s -> %s" % (word, "、".join(list(relateds)[:8]))).strip()}
 		for related in relateds:
 			relatedexpl = lookup(related)
 			if relatedexpl is None:
@@ -385,6 +395,7 @@ if __name__ == '__main__':
 	print("已完成莽夫式翻译，正在进行AI纠正。")
 	with redirect_std_streams(stdout=sys.stderr):
 		corrected = Caribe.caribe_corrector(result_string)
+		#corrected = result_string
 
 	# 再用正经翻译软件翻译回来
 	if USE_PROXY:
@@ -400,12 +411,13 @@ if __name__ == '__main__':
 
 	print("原文：%s" % (text))
 	def show_comment(comset, prompt, delim='，'):
-		if comset is not None and len(comset):
-			print("%s%s" % (prompt, delim.join(comset)))
-	show_comment(altered, "转义查询：")
+		try:
+			if len(comset):
+				print("%s%s" % (prompt, delim.join(comset)))
+		except TypeError:
+			pass
 	show_comment(extended, "扩展查询：")
-	show_comment(self_directed, "仅自引用项：")
-	show_comment(removed_particles, "移除的字典释义：")
+	show_comment(removed_expl, "移除的字典释义：")
 	print("莽夫式翻译结果：\n%s" % (tranwords))
 
 	if len(result_string) >= 200:
