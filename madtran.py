@@ -75,14 +75,14 @@ full2half[0x3000] = 0x20
 extended = set()
 removed_expl = set()
 
-def remove_parenthesis(comments):
+def remove_parenthesis(comments, parenthesis="()"):
 	result = ""
 	while True:
-		cut = comments.split('(', 1)
+		cut = comments.split(parenthesis[0], 1)
 		result += cut[0] + " "
 		if len(cut) == 2:
 			try:
-				comments = cut[1].split(')', 1)[1] + " "
+				comments = cut[1].split(parenthesis[1], 1)[1] + " "
 			except IndexError:
 				break
 		else:
@@ -232,11 +232,16 @@ def get_best_random_expl(word):
 		global extended, removed_expl
 
 		# 去掉括弧里的内容，并截断逗号后面的内容
-		comment = remove_parenthesis(comment).split(',', 1)[0].strip()
-		coms = {comment}
-		removed_expl |= coms # 先添加到“已移除项”
+		comment = remove_parenthesis(comment, "()")
+		comment = remove_parenthesis(comment, "{}")
+		comment = comment.split(',', 1)[0].strip()
+		comment = comment.replace('  ', ' ')
 		if len(comment) == 0:
 			return
+
+		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
+		remo = {"%s -> %s" % (word, comment)}
+		removed_expl |= remo
 
 		# 去掉“particle”类型的解释，即语素描述
 		if is_particle(comment):
@@ -258,7 +263,7 @@ def get_best_random_expl(word):
 
 		# 筛选需要的
 		cand |= {comment}
-		removed_expl -= coms # 实际上没有被移除时，从“已移除项”里移除。
+		removed_expl -= remo # 实际上没有被移除时，从“已移除项”里排除。
 
 	# 找到后，处理每一个解释项，删掉不要的解释项，并记录“另见”
 	for comment in try_match_pinyin(expl):
@@ -417,7 +422,7 @@ if __name__ == '__main__':
 		except TypeError:
 			pass
 	show_comment(extended, "扩展查询：")
-	show_comment(removed_expl, "移除的字典释义：")
+	show_comment(removed_expl, "移除的字典释义：", '\n')
 	print("莽夫式翻译结果：\n%s" % (tranwords))
 
 	if len(result_string) >= 200:
