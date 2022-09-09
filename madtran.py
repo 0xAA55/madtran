@@ -70,9 +70,8 @@ if __name__ == '__main__':
 
 from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
 
-full2half = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
-full2half[0x3000] = 0x20
 extended = set()
+redirected = set()
 removed_expl = set()
 
 def remove_parenthesis(comments, parenthesis="()"):
@@ -191,7 +190,7 @@ def get_seealso(comment):
 	return alsos
 
 def get_best_random_expl(word):
-	global extended, removed_expl
+	global extended, redirected, removed_expl
 	scwords = {word}
 	try:
 		scwords |= ctdict[word]
@@ -227,9 +226,9 @@ def get_best_random_expl(word):
 		return comments
 
 	# 检查内容是不是需要的
-	def check_comment(comment):
+	def check_comment(cw, comment):
 		nonlocal cand, seealsos
-		global extended, removed_expl
+		global extended, redirected, removed_expl
 
 		# 去掉括弧里的内容，并截断逗号后面的内容
 		comment = remove_parenthesis(comment, "()")
@@ -240,7 +239,7 @@ def get_best_random_expl(word):
 			return
 
 		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
-		remo = {"%s -> %s" % (word, comment)}
+		remo = {"%s -> %s" % (cw, comment)}
 		removed_expl |= remo
 
 		# 去掉“particle”类型的解释，即语素描述
@@ -251,10 +250,11 @@ def get_best_random_expl(word):
 		seealso = get_seealso(comment)
 		if len(seealso):
 			seealsos |= seealso
+			removed_expl -= remo
 			return
 
 		# 去掉关联性匹配失败的内容
-		if is_unrelated(word, comment):
+		if is_unrelated(cw, comment):
 			return
 
 		# 去掉其余不想要的内容
@@ -267,36 +267,49 @@ def get_best_random_expl(word):
 
 	# 找到后，处理每一个解释项，删掉不要的解释项，并记录“另见”
 	for comment in try_match_pinyin(expl):
-		check_comment(comment)
+		check_comment(word, comment)
 
-	# 如果没有符合条件的选项，则看看有没有合适的“另见”
-	# 先把“另见”里面与当前词相同的去除
 	while len(cand) == 0:
-		seealsos - scwords
-		if len(seealsos) == 0:
-			break
-		iter_seealsos = set(seealsos)
-		for also in iter_seealsos:
-			alsoexpl = lookup(also)
-			if alsoexpl is None:
-				print("无用 also 内容：%s" % (also))
-				continue
-			for comment in try_match_pinyin(alsoexpl):
-				check_comment(comment)
-		seealsos |= iter_seealsos
+		# 如果没有符合条件的选项，则看看有没有合适的“另见”
+		# 先把“另见”里面与当前词相同的去除
+		no_seealsos = False
+		while len(cand) == 0:
+			# 去掉自己对自己的引用
+			seealsos -= scwords
+			if len(seealsos) == 0:
+				no_seealsos = True
+				break
+			iter_seealsos = set(seealsos)
+			seealsos = set()
+			for also in iter_seealsos:
+				alsoexpl = lookup(also)
+				if alsoexpl is None:
+					print("无法查询的“另见”条目：%s" % (also))
+					continue
+				redirected |= {"%s -> %s" % (word, also)}
+				for comment in try_match_pinyin(alsoexpl):
+					check_comment(also, comment)
 
-	# 如果还没有找到符合条件的选项（没有可用的 seealsos ）则找相关词
-	if len(cand) == 0:
-		relateds = get_related_words(word)
-		if len(relateds):
-			extended |= {("%s -> %s" % (word, "、".join(list(relateds)[:8]))).strip()}
-		for related in relateds:
-			relatedexpl = lookup(related)
-			if relatedexpl is None:
-				print("无用 related 内容：%s" % (related))
-				continue
-			for comment in try_match_pinyin(relatedexpl):
-				check_comment(comment)
+		# 如果还没有找到符合条件的选项（没有可用的 seealsos ）则找相关词
+		no_related = False
+		if len(cand) == 0:
+			relateds = get_related_words(word)
+			if len(relateds) == 0:
+				no_related = True
+			else:
+				extended |= {("%s -> %s" % (word, "、".join(list(relateds)[:8]))).strip()}
+				for related in relateds:
+					relatedexpl = lookup(related)
+					if relatedexpl is None:
+						print("无法查询的“关联”条目：%s" % (related))
+						continue
+					for comment in try_match_pinyin(relatedexpl):
+						check_comment(related, comment)
+				no_seealsos = True if len(seealsos) == 0 else False
+
+		# 如果既没有“另见”条目，也没有关联词，则退出循环
+		if no_seealsos and no_related:
+			break
 
 	# 如果相关词里也给不出候选项，则翻译失败，返回原单词。
 	if len(cand) == 0:
@@ -308,6 +321,12 @@ def get_best_random_expl(word):
 		word = word.replace(wr, '')
 	return word, True
 
+full2half_d = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
+full2half_d[0x3000] = 0x20
+full2half_d[ord('。')] = ord('.')
+def full2half(f2h):
+	return f2h.translate(full2half_d)
+
 def madtran(text):
 	# 根据可能的词语长度，截取输入的句子来查字典找释义。
 	search_range = [2, 3, 4, 5, 1] + list(range(6, cedict_maxkeylen + 1))
@@ -316,7 +335,8 @@ def madtran(text):
 	while len(text):
 		# 过滤标点符号等字典里没有的东西
 		if text[0] not in firstchars:
-			trans += [(text[0], text[0].translate(full2half))]
+			word = text[0]
+			trans += [(word, full2half(word))]
 			text = text[1:]
 			continue
 		# 进行遍历查词，从最短的词开始查。
@@ -332,7 +352,8 @@ def madtran(text):
 				break
 		# 没查到，则直接把单字作为结果（跳过这个字）。
 		if status == False:
-			trans += [(text[0], text[0].translate(full2half))]
+			word = text[0]
+			trans += [(word, full2half(word))]
 			text = text[1:]
 			continue
 	# 翻译出结果后，除最后一个单词，其余的单词的释义里的一些句尾符号要去除
@@ -422,6 +443,7 @@ if __name__ == '__main__':
 		except TypeError:
 			pass
 	show_comment(extended, "扩展查询：")
+	show_comment(redirected, "转义查询：")
 	show_comment(removed_expl, "移除的字典释义：\n", '\n')
 	print("莽夫式翻译结果：\n%s" % (tranwords))
 
