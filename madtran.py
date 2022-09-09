@@ -240,7 +240,8 @@ def get_best_random_expl(word):
 
 		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
 		remo = {"%s -> %s" % (cw, comment)}
-		removed_expl |= remo
+		# 只提示完全吻合的词
+		if cw == word: removed_expl |= remo
 
 		# 去掉“particle”类型的解释，即语素描述
 		if is_particle(comment):
@@ -269,6 +270,7 @@ def get_best_random_expl(word):
 	for comment in try_match_pinyin(expl):
 		check_comment(word, comment)
 
+	p_relateds = set()
 	while len(cand) == 0:
 		# 如果没有符合条件的选项，则看看有没有合适的“另见”
 		# 先把“另见”里面与当前词相同的去除
@@ -294,6 +296,7 @@ def get_best_random_expl(word):
 		no_related = False
 		if len(cand) == 0:
 			relateds = get_related_words(word)
+			relateds -= p_relateds
 			if len(relateds) == 0:
 				no_related = True
 			else:
@@ -306,6 +309,7 @@ def get_best_random_expl(word):
 					for comment in try_match_pinyin(relatedexpl):
 						check_comment(related, comment)
 				no_seealsos = True if len(seealsos) == 0 else False
+			p_relateds |= set(relateds)
 
 		# 如果既没有“另见”条目，也没有关联词，则退出循环
 		if no_seealsos and no_related:
