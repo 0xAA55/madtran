@@ -422,7 +422,7 @@ if __name__ == '__main__':
 		except TypeError:
 			pass
 	show_comment(extended, "扩展查询：")
-	show_comment(removed_expl, "移除的字典释义：", '\n')
+	show_comment(removed_expl, "移除的字典释义：\n", '\n')
 	print("莽夫式翻译结果：\n%s" % (tranwords))
 
 	if len(result_string) >= 200:
