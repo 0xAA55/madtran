@@ -418,7 +418,7 @@ if __name__ == '__main__':
 	def show_comment(comset, prompt, delim='，'):
 		try:
 			if len(comset):
-				print("%s%s" % (prompt, delim.join(comset)))
+				print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
 		except TypeError:
 			pass
 	show_comment(extended, "扩展查询：")
