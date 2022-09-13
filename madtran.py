@@ -363,7 +363,7 @@ def madtran(text):
 	# 翻译出结果后，除最后一个单词，其余的单词的释义里的一些句尾符号要去除
 	for i in range(len(trans) - 1):
 		text, tran = trans[i]
-		if text == tran: continue
+		if full2half(text) == tran: continue
 		# 如果原单词里不包含标点，那么应当去除翻译后的单词里的标点
 		if len(set(text) & to_remove_ending_punct) == 0:
 			for punct in to_remove_ending_punct:
