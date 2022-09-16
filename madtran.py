@@ -385,7 +385,7 @@ def get_result_string(trans):
 				if tran[0] not in ['~', '-']:
 					result += " " + tran + " "
 				else:
-					result += tran[1:].strip() + " "
+					result = result.strip() + tran[1:].strip() + " "
 	return remove_double_spaces(result.strip())
 
 def usage():
