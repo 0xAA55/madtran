@@ -372,15 +372,21 @@ def madtran(text):
 	return trans
 
 def get_result_string(trans):
+	def remove_double_spaces(text):
+		while "  " in text:
+			text = text.replace("  ", " ")
+		return text
 	result = ""
 	for word, tran in trans:
 		if word == tran:
 			result += word
 		else:
-			result += " " + tran + " "
-	while "  " in result:
-		result = result.replace("  ", " ")
-	return result.strip()
+			if len(tran):
+				if tran[0] not in ['~', '-']:
+					result += " " + tran + " "
+				else:
+					result += tran[1:].strip() + " "
+	return remove_double_spaces(result.strip())
 
 def usage():
 	print("用法：madtran <中文内容>")
