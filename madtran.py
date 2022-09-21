@@ -342,6 +342,7 @@ def get_best_random_expl(word):
 		chword = cand_from[chcom]
 		if word != chword:
 			redirect_chosen |= {"%s -> %s" % (word, chword)}
+			word = chword
 	except KeyError:
 		pass
 
