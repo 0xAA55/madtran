@@ -357,6 +357,25 @@ full2half_d[ord('。')] = ord('.')
 def full2half(f2h):
 	return f2h.translate(full2half_d)
 
+def merge_translation_result(trans):
+	texbuf, tranbuf = '', ''
+	prev_is_translated = True
+	result = []
+	for text, tran in trans:
+		if text == tran:
+			texbuf += text
+			tranbuf += tran
+			prev_is_translated = False
+		else:
+			if not prev_is_translated:
+				result += [(texbuf, tranbuf)]
+				texbuf, tranbuf = '', ''
+				prev_is_translated = True
+			result += [(text, tran)]
+	if not prev_is_translated:
+		result += [(texbuf, tranbuf)]
+	return result
+
 def madtran(text):
 	# 根据可能的词语长度，截取输入的句子来查字典找释义。
 	search_range = [2, 3, 4, 5, 1] + list(range(6, cedict_maxkeylen + 1))
@@ -395,7 +414,7 @@ def madtran(text):
 			for punct in to_remove_ending_punct:
 				tran = tran.replace(punct, ' ')
 			trans[i] = (text, tran.strip())
-	return trans
+	return merge_translation_result(trans)
 
 def get_result_string(trans):
 	def remove_double_spaces(text):
