@@ -70,6 +70,7 @@ if __name__ == '__main__':
 
 from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
 
+pruned = set()
 extended = set()
 redirected = set()
 removed_expl = set()
@@ -122,6 +123,7 @@ also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see 
 unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier for ', 'interjection of ', 'Kangxi radical ' ]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...' ]
+to_be_removed_heading = ['to ']
 to_remove_ending_punct = set(';.?!')
 
 particle_checkers_starting = [
@@ -195,7 +197,7 @@ def get_seealso(comment):
 	return alsos
 
 def get_best_random_expl(word):
-	global extended, redirected, removed_expl, redirect_chosen
+	global pruned, extended, redirected, removed_expl, redirect_chosen
 	scwords = {word}
 	try:
 		scwords |= ctdict[word]
@@ -347,8 +349,14 @@ def get_best_random_expl(word):
 		pass
 
 	# 挑选后，删除不需要的字符串内容
+	before_prune = chcom
 	for wr in to_be_removed:
 		chcom = chcom.replace(wr, '')
+	for wr in to_be_removed_heading:
+		if chcom.startswith(wr):
+			chcom = chcom[len(wr):].strip()
+	if before_prune != chcom:
+		pruned |= {"%s -> %s" % (before_prune, chcom)}
 	return chcom, True
 
 full2half_d = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
@@ -497,6 +505,7 @@ if __name__ == '__main__':
 				print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
 		except TypeError:
 			pass
+	show_comment(pruned, "释义简化：")
 	show_comment(extended, "扩展查询：")
 	show_comment(redirected, "转义查询：")
 	show_comment(removed_expl, "移除的字典释义：\n", '\n')
