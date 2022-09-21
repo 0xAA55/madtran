@@ -73,6 +73,7 @@ from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
 extended = set()
 redirected = set()
 removed_expl = set()
+redirect_chosen = set()
 
 def remove_parenthesis(comments, parenthesis="()"):
 	result = ""
@@ -87,6 +88,10 @@ def remove_parenthesis(comments, parenthesis="()"):
 		else:
 			break
 	return result.replace("  ", " ").strip()
+
+def extract_quoteds(comments, quote = '"'):
+	a = comments.split('"')
+	return [a[i * 2 + 1] for i in range(len(a) // 2)]
 
 def lookup(word):
 	try:
@@ -190,7 +195,7 @@ def get_seealso(comment):
 	return alsos
 
 def get_best_random_expl(word):
-	global extended, redirected, removed_expl
+	global extended, redirected, removed_expl, redirect_chosen
 	scwords = {word}
 	try:
 		scwords |= ctdict[word]
@@ -201,15 +206,18 @@ def get_best_random_expl(word):
 		return word, False
 	wpy = " ".join([p[0] for p in pinyin(word, style=Style.TONE3, neutral_tone_with_five=True)])
 	wpyu = wpy.upper()
+
 	# 遍历查阅到的字典项，为进行大小写不敏感的拼音查找而复制出全大写的拼音项。
 	upperlook = {}
 	for pron, comments in expl.items():
 		upron = pron.upper()
 		if upron not in expl: upperlook[upron] = comments
 	expl = {**expl, **upperlook}
+
 	# 先找到所有相关的候选词
 	cand = set()
 	seealsos = set()
+	cand_from = {}
 
 	# 先找拼音对应的，找不到就不管拼音了
 	def try_match_pinyin(expl):
@@ -230,16 +238,24 @@ def get_best_random_expl(word):
 		nonlocal cand, seealsos
 		global extended, redirected, removed_expl
 
+		# 提取引号里的内容
+		quoteds = extract_quoteds(comment)
+
 		# 去掉括弧里的内容，并截断逗号后面的内容
 		comment = remove_parenthesis(comment, "()")
 		comment = remove_parenthesis(comment, "{}")
 		comment = comment.split(',', 1)[0].strip()
 		comment = comment.replace('  ', ' ')
+
+		# 如果整个释义里、不要的东西都删除后就莫得释义内容了，则从引号里的内容里寻找可能有用的内容。
 		if len(comment) == 0:
+			for quoted in quoteds:
+				check_comment(cw, quoted)
 			return
 
 		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
 		remo = {"%s -> %s" % (cw, comment)}
+
 		# 只提示完全吻合的词
 		if cw == word: removed_expl |= remo
 
@@ -264,6 +280,7 @@ def get_best_random_expl(word):
 
 		# 筛选需要的
 		cand |= {comment}
+		cand_from[comment] = cw # 反向查询
 		removed_expl -= remo # 实际上没有被移除时，从“已移除项”里排除。
 
 	# 找到后，处理每一个解释项，删掉不要的解释项，并记录“另见”
@@ -320,10 +337,16 @@ def get_best_random_expl(word):
 		return word, False
 
 	# 否则从剩下的候选项里，瞎几把挑一个。
-	word = random.choice(list(cand))
+	chcom = random.choice(list(cand))
+	try:
+		redirect_chosen |= {"%s -> %s" % (word, cand_from[chcom])}
+	except KeyError:
+		pass
+
+	# 挑选后，删除不需要的字符串内容
 	for wr in to_be_removed:
-		word = word.replace(wr, '')
-	return word, True
+		chcom = chcom.replace(wr, '')
+	return chcom, True
 
 full2half_d = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
 full2half_d[0x3000] = 0x20
@@ -455,6 +478,7 @@ if __name__ == '__main__':
 	show_comment(extended, "扩展查询：")
 	show_comment(redirected, "转义查询：")
 	show_comment(removed_expl, "移除的字典释义：\n", '\n')
+	show_comment(redirect_chosen, "采用的转义查询：")
 	print("莽夫式翻译结果：\n%s" % (tranwords))
 
 	if len(result_string) >= 200:
