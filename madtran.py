@@ -339,7 +339,9 @@ def get_best_random_expl(word):
 	# 否则从剩下的候选项里，瞎几把挑一个。
 	chcom = random.choice(list(cand))
 	try:
-		redirect_chosen |= {"%s -> %s" % (word, cand_from[chcom])}
+		chword = cand_from[chcom]
+		if word != chword:
+			redirect_chosen |= {"%s -> %s" % (word, chword)}
 	except KeyError:
 		pass
 
