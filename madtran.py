@@ -220,6 +220,7 @@ def get_best_random_expl(word):
 	cand = set()
 	seealsos = set()
 	cand_from = {}
+	raw_comments = {}
 
 	# 先找拼音对应的，找不到就不管拼音了
 	def try_match_pinyin(expl):
@@ -237,13 +238,14 @@ def get_best_random_expl(word):
 
 	# 检查内容是不是需要的
 	def check_comment(cw, comment):
-		nonlocal cand, seealsos
-		global extended, redirected, removed_expl
+		nonlocal cand, seealsos, raw_comments
+		global pruned, extended, redirected, removed_expl
 
 		# 提取引号里的内容
 		quoteds = extract_quoteds(comment)
 
 		# 去掉括弧里的内容，并截断逗号后面的内容
+		before_prune = comment
 		comment = remove_parenthesis(comment, "()")
 		comment = remove_parenthesis(comment, "{}")
 		comment = comment.split(',', 1)[0].strip()
@@ -254,6 +256,8 @@ def get_best_random_expl(word):
 			for quoted in quoteds:
 				check_comment(cw, quoted)
 			return
+		else:
+			raw_comments[comment] = before_prune
 
 		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
 		remo = {"%s -> %s" % (cw, comment)}
@@ -349,7 +353,10 @@ def get_best_random_expl(word):
 		pass
 
 	# 挑选后，删除不需要的字符串内容
-	before_prune = chcom
+	try:
+		before_prune = raw_comments[chcom]
+	except KeyError:
+		before_prune = [chcom]
 	for wr in to_be_removed:
 		chcom = chcom.replace(wr, '')
 	for wr in to_be_removed_heading:
@@ -505,7 +512,7 @@ if __name__ == '__main__':
 				print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
 		except TypeError:
 			pass
-	show_comment(pruned, "释义简化：")
+	show_comment(pruned, "释义简化：\n", '\n')
 	show_comment(extended, "扩展查询：")
 	show_comment(redirected, "转义查询：")
 	show_comment(removed_expl, "移除的字典释义：\n", '\n')
