@@ -153,6 +153,26 @@ particle_checkers_ending = [
 	"final particle"
 ]
 
+place_name_hints = [
+	"Province",
+	"province",
+	"County",
+	"county",
+	"District",
+	"district",
+	"City",
+	"city",
+	"Village",
+	"village",
+	"Banner",
+	"banner"
+]
+
+mountain_name_hints = [
+	"Mt. ",
+	"Mt "
+]
+
 def is_particle(comment):
 	for checker in particle_checkers_starting:
 		if checker in comment:
@@ -161,6 +181,22 @@ def is_particle(comment):
 		if checker in comment:
 			return True
 	return False
+
+def is_mountain(comment):
+	for hint in mountain_name_hints:
+		if comment.startswith(hint):
+			return True
+	return False
+
+def get_starting_namelike_words(comment):
+	cut = comment.split(' ')
+	ret = []
+	for word in cut:
+		if len(word) != 0 and word[0].isupper():
+			ret += [word]
+		else:
+			break
+	return " ".join(ret)
 
 def is_unwanted(comment):
 	for checker in unwant_checkers:
@@ -195,6 +231,17 @@ def get_seealso(comment):
 			if word in cedict:
 				alsos |= {word}
 	return alsos
+
+def prune_place_name(comment):
+	if comment[0].isupper() == False:
+		return comment
+	words = comment.split(' ')
+	ret = []
+	for word in words:
+		ret += [word]
+		if word in place_name_hints:
+			break
+	return " ".join(ret)
 
 def get_best_random_expl(word):
 	global pruned, extended, redirected, removed_expl, redirect_chosen
@@ -260,7 +307,7 @@ def get_best_random_expl(word):
 			raw_comments[comment] = before_prune
 
 		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
-		remo = {"%s -> %s" % (cw, comment)}
+		remo = {"%s -> %s" % (cw, before_prune)}
 
 		# 只提示完全吻合的词
 		if cw == word: removed_expl |= remo
@@ -275,6 +322,13 @@ def get_best_random_expl(word):
 			seealsos |= seealso
 			removed_expl -= remo
 			return
+
+		# 如果是地名，去掉不需要的部分
+		comment = prune_place_name(comment)
+
+		# 检测是否为山峰名字
+		if is_mountain(comment):
+			comment = get_starting_namelike_words(comment)
 
 		# 去掉关联性匹配失败的内容
 		if is_unrelated(cw, comment):
@@ -344,6 +398,8 @@ def get_best_random_expl(word):
 
 	# 否则从剩下的候选项里，瞎几把挑一个。
 	chcom = random.choice(list(cand))
+
+	# 如果发生转义查询，则找回这个释义对应的辞头
 	try:
 		chword = cand_from[chcom]
 		if word != chword:
@@ -356,14 +412,14 @@ def get_best_random_expl(word):
 	try:
 		before_prune = raw_comments[chcom]
 	except KeyError:
-		before_prune = [chcom]
+		before_prune = chcom
 	for wr in to_be_removed:
 		chcom = chcom.replace(wr, '')
 	for wr in to_be_removed_heading:
 		if chcom.startswith(wr):
 			chcom = chcom[len(wr):].strip()
 	if before_prune != chcom:
-		pruned |= {"%s -> %s" % (before_prune, chcom)}
+		pruned |= {"%s：%s -> %s" % (word, before_prune, chcom)}
 	return chcom, True
 
 full2half_d = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
@@ -393,7 +449,8 @@ def merge_translation_result(trans):
 
 def madtran(text):
 	# 根据可能的词语长度，截取输入的句子来查字典找释义。
-	search_range = [2, 3, 4, 5, 1] + list(range(6, cedict_maxkeylen + 1))
+	search_range = [8, 7, 6, 5, 4, 3, 2, 1]
+	search_range += list(range(max(search_range), cedict_maxkeylen + 1))
 	trans = []
 	text = text.replace('\n', ' ')
 	while len(text):
@@ -512,11 +569,11 @@ if __name__ == '__main__':
 				print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
 		except TypeError:
 			pass
-	show_comment(pruned, "释义简化：\n", '\n')
 	show_comment(extended, "扩展查询：")
-	show_comment(redirected, "转义查询：")
 	show_comment(removed_expl, "移除的字典释义：\n", '\n')
+	show_comment(redirected, "转义查询：")
 	show_comment(redirect_chosen, "采用的转义查询：")
+	show_comment(pruned, "释义简化：\n", '\n')
 	print("莽夫式翻译结果：\n%s" % (tranwords))
 
 	if len(result_string) >= 200:
