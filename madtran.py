@@ -76,23 +76,29 @@ redirected = set()
 removed_expl = set()
 redirect_chosen = set()
 
-def remove_parenthesis(comments, parenthesis="()"):
+def remove_parenthesis(comment, parenthesis="()"):
 	result = ""
 	while True:
-		cut = comments.split(parenthesis[0], 1)
+		cut = comment.split(parenthesis[0], 1)
 		result += cut[0] + " "
 		if len(cut) == 2:
 			try:
-				comments = cut[1].split(parenthesis[1], 1)[1] + " "
+				comment = cut[1].split(parenthesis[1], 1)[1] + " "
 			except IndexError:
 				break
 		else:
 			break
 	return result.replace("  ", " ").strip()
 
-def extract_quoteds(comments, quote = '"'):
-	a = comments.split('"')
+def extract_quoteds(comment, quote = '"'):
+	a = comment.split('"')
 	return [a[i * 2 + 1] for i in range(len(a) // 2)]
+
+def get_starting_nonascii(comment):
+	for i in range(len(comment)):
+		if ord(comment[i]) <= 127:
+			return comment[:i]
+	return comment
 
 def lookup(word):
 	try:
@@ -119,11 +125,11 @@ def get_related_words(word):
 			curlen = newlen
 	return related
 
-also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written ", "refers to "]
+also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
 unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier for ', 'interjection of ', 'Kangxi radical ' ]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...' ]
-to_be_removed_heading = ['to ']
+to_be_removed_heading = ['to ', 'refers to ']
 to_remove_ending_punct = set(';.?!')
 
 particle_checkers_starting = [
@@ -221,8 +227,10 @@ def get_seealso(comment):
 				break
 			except IndexError:
 				pass
+
 	if also is None:
 		return set()
+
 	# 找到“另见”后，把繁中的部分翻译为简中，并返回。
 	for word in also:
 		try:
@@ -557,10 +565,12 @@ if __name__ == '__main__':
 	else:
 		proxies = None
 	translator = googletrans.Translator(proxies=proxies)
-	try:
-		translated = translator.translate(corrected, dest='zh-cn').text
-	except:
-		translated = "调用谷歌翻译失败。"
+	def get_translated(text):
+		global translator
+		try:
+			return translator.translate(text, dest='zh-cn').text
+		except:
+			return "调用谷歌翻译失败。"
 
 	print("原文：%s" % (text))
 	def show_comment(comset, prompt, delim='，'):
@@ -578,6 +588,13 @@ if __name__ == '__main__':
 
 	if len(result_string) >= 200:
 		print("AI语法纠正：%s" % (corrected))
+		print("谷歌翻译：%s" % (get_translated(corrected)))
 	else:
-		print("AI语法纠正：\n纠正前：%s\n纠正后：%s" % (result_string, corrected))
-	print("谷歌翻译：%s" % (translated))
+		translated_nc = get_translated(result_string)
+		translated_co = get_translated(corrected)
+		print("AI语法纠正：")
+		print("纠正前：%s" % (result_string))
+		if result_string.lower() != corrected.lower() and translated_nc != translated_co:
+			print("谷歌翻译：%s" % (translated_nc))
+		print("纠正后：%s" % (corrected))
+		print("谷歌翻译：%s" % (translated_co))
