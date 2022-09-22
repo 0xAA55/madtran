@@ -119,7 +119,7 @@ def get_related_words(word):
 			curlen = newlen
 	return related
 
-also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
+also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written ", "refers to "]
 unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier for ', 'interjection of ', 'Kangxi radical ' ]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...' ]
@@ -450,7 +450,7 @@ def merge_translation_result(trans):
 def madtran(text):
 	# 根据可能的词语长度，截取输入的句子来查字典找释义。
 	search_range = [8, 7, 6, 5, 4, 3, 2, 1]
-	search_range += list(range(max(search_range), cedict_maxkeylen + 1))
+	search_range += list(range(max(search_range) + 1, cedict_maxkeylen + 1))
 	trans = []
 	text = text.replace('\n', ' ')
 	while len(text):
@@ -570,10 +570,10 @@ if __name__ == '__main__':
 		except TypeError:
 			pass
 	show_comment(extended, "扩展查询：")
-	show_comment(removed_expl, "移除的字典释义：\n", '\n')
+	show_comment(removed_expl, "移除的字典释义：\n* ", '\n* ')
 	show_comment(redirected, "转义查询：")
 	show_comment(redirect_chosen, "采用的转义查询：")
-	show_comment(pruned, "释义简化：\n", '\n')
+	show_comment(pruned, "释义简化：\n* ", '\n* ')
 	print("莽夫式翻译结果：\n%s" % (tranwords))
 
 	if len(result_string) >= 200:
