@@ -126,7 +126,7 @@ def get_related_words(word):
 	return related
 
 also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
-unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier for ', 'interjection of ', 'Kangxi radical ' ]
+unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier ', 'interjection of ', 'Kangxi radical ', 'radical in Chinese' ]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...' ]
 to_be_removed_heading = ['to ', 'refers to ']
@@ -511,7 +511,10 @@ def get_result_string(trans):
 					result += " " + tran + " "
 				else:
 					result = result.strip() + tran[1:].strip() + " "
-	return remove_double_spaces(result.strip())
+	result = remove_double_spaces(result.strip()).replace(' ,', ',').replace(', ', ',').replace(',', ', ').strip()
+	if len(result) and result[-1].isalpha():
+		result += '.'
+	return result
 
 def usage():
 	print("用法：madtran <中文内容>")
