@@ -128,7 +128,7 @@ def get_related_words(word):
 also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
 unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier ', 'interjection of ', 'Kangxi radical ', 'radical in Chinese' ]
 relation_checkers = [('单', 'unit of ')]
-to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...' ]
+to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...', '(completed action marker)' ]
 to_be_removed_heading = ['to ', 'refers to ']
 to_remove_ending_punct = set(';.?!')
 
@@ -177,6 +177,10 @@ place_name_hints = [
 mountain_name_hints = [
 	"Mt. ",
 	"Mt "
+]
+
+don_not_filter = [
+	"(completed action marker)"
 ]
 
 def is_particle(comment):
@@ -301,10 +305,11 @@ def get_best_random_expl(word):
 
 		# 去掉括弧里的内容，并截断逗号后面的内容
 		before_prune = comment
-		comment = remove_parenthesis(comment, "()")
-		comment = remove_parenthesis(comment, "{}")
-		comment = comment.split(',', 1)[0].strip()
-		comment = comment.replace('  ', ' ')
+		if comment not in don_not_filter:
+			comment = remove_parenthesis(comment, "()")
+			comment = remove_parenthesis(comment, "{}")
+			comment = comment.split(',', 1)[0].strip()
+			comment = comment.replace('  ', ' ')
 
 		# 如果整个释义里、不要的东西都删除后就莫得释义内容了，则从引号里的内容里寻找可能有用的内容。
 		if len(comment) == 0:
