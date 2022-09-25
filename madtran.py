@@ -560,19 +560,13 @@ if __name__ == '__main__':
 		print("原始结果：<空>")
 		exit()
 
-	# 进行一个句子纠正
-	print("已完成莽夫式翻译，正在进行AI纠正。")
-	with redirect_std_streams(stdout=sys.stderr):
-		corrected = Caribe.caribe_corrector(result_string)
-		#corrected = result_string
-
-	# 再用正经翻译软件翻译回来
 	if USE_PROXY:
 		proxy = SyncHTTPProxy((b"http", PROXY_ADDR.encode('utf-8'), PROXY_PORT, b""))
 		proxies = {"http" : proxy, "https" : proxy}
 	else:
 		proxies = None
 	translator = googletrans.Translator(proxies=proxies)
+
 	def get_translated(text):
 		global translator
 		try:
@@ -580,6 +574,13 @@ if __name__ == '__main__':
 		except:
 			return "调用谷歌翻译失败。"
 
+	def get_corrected(text):
+		with redirect_std_streams(stdout=sys.stderr):
+			return Caribe.caribe_corrector(text)
+			
+	translated_nc = get_translated(result_string)
+
+	print("已完成莽夫式翻译。")
 	print("原文：%s" % (text))
 	def show_comment(comset, prompt, delim='，'):
 		try:
@@ -593,16 +594,15 @@ if __name__ == '__main__':
 	show_comment(redirect_chosen, "采用的转义查询：")
 	show_comment(pruned, "释义简化：\n* ", '\n* ')
 	print("莽夫式翻译结果：\n%s" % (tranwords))
+	print("AI语法纠正：")
+	print("纠正前：%s" % (result_string))
+	print("谷歌翻译：%s" % (translated_nc))
+	print("正在对生成的英文句子进行 AI 纠正。")
 
-	if len(result_string) >= 200:
-		print("AI语法纠正：%s" % (corrected))
-		print("谷歌翻译：%s" % (get_translated(corrected)))
-	else:
-		translated_nc = get_translated(result_string)
-		translated_co = get_translated(corrected)
-		print("AI语法纠正：")
-		print("纠正前：%s" % (result_string))
-		if result_string.lower() != corrected.lower() and translated_nc != translated_co:
-			print("谷歌翻译：%s" % (translated_nc))
+	corrected = get_corrected(result_string)
+	translated_co = get_translated(corrected)
+	if result_string.lower() != corrected.lower() and translated_nc != translated_co:
 		print("纠正后：%s" % (corrected))
 		print("谷歌翻译：%s" % (translated_co))
+	else:
+		print("纠正后结果与纠正前一致。")
