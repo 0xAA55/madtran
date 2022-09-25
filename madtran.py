@@ -549,6 +549,8 @@ if __name__ == '__main__':
 	if len(text) == 0:
 		usage()
 
+	print("正在进行莽夫式翻译。")
+
 	# 我们的按词翻译方案
 	trans = madtran(text)
 	tranwords = "|".join(["%s -> %s" % kv if "".join(kv) != '  ' else "空格" for kv in trans])
@@ -577,7 +579,7 @@ if __name__ == '__main__':
 	def get_corrected(text):
 		with redirect_std_streams(stdout=sys.stderr):
 			return Caribe.caribe_corrector(text)
-			
+
 	translated_nc = get_translated(result_string)
 
 	print("已完成莽夫式翻译。")
