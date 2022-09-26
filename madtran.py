@@ -126,11 +126,17 @@ def get_related_words(word):
 	return related
 
 also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
-unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|', 'classifier ', 'interjection of ', 'Kangxi radical ', 'radical in Chinese' ]
+unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|',
+	'classifier ',
+	'interjection of ',
+	'Kangxi radical ',
+	'radical in Chinese',
+	'opposite:'
+]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...', '(completed action marker)' ]
 to_be_removed_heading = ['to ', 'refers to ']
-to_remove_ending_punct = set(';.?!')
+to_remove_ending_punctuations = set(';.?!')
 
 particle_checkers_starting = [
 	"particle expressing ",
@@ -495,9 +501,9 @@ def madtran(text):
 		text, tran = trans[i]
 		if full2half(text) == tran: continue
 		# 如果原单词里不包含标点，那么应当去除翻译后的单词里的标点
-		if len(set(text) & to_remove_ending_punct) == 0:
-			for punct in to_remove_ending_punct:
-				tran = tran.replace(punct, ' ')
+		if len(set(text) & to_remove_ending_punctuations) == 0:
+			for punctuation in to_remove_ending_punctuations:
+				tran = tran.replace(punctuation, ' ')
 			trans[i] = (text, tran.strip())
 	return merge_translation_result(trans)
 
@@ -506,6 +512,8 @@ def get_result_string(trans):
 		while "  " in text:
 			text = text.replace("  ", " ")
 		return text
+	def punctuation_spacing(text, punctuation = ','):
+		return text.replace(' ' + punctuation, punctuation).replace(punctuation + ' ', punctuation).replace(punctuation, punctuation + ' ').strip()
 	result = ""
 	for word, tran in trans:
 		if word == tran:
@@ -516,7 +524,11 @@ def get_result_string(trans):
 					result += " " + tran + " "
 				else:
 					result = result.strip() + tran[1:].strip() + " "
-	result = remove_double_spaces(result.strip()).replace(' ,', ',').replace(', ', ',').replace(',', ', ').strip()
+	result = remove_double_spaces(result.strip())
+	result = punctuation_spacing(result, ',')
+	result = punctuation_spacing(result, '.')
+	result = punctuation_spacing(result, '!')
+	result = punctuation_spacing(result, '?')
 	if len(result) and result[-1].isalpha():
 		result += '.'
 	return result
@@ -553,7 +565,7 @@ if __name__ == '__main__':
 
 	# 我们的按词翻译方案
 	trans = madtran(text)
-	tranwords = "|".join(["%s -> %s" % kv if "".join(kv) != '  ' else "空格" for kv in trans])
+	tranwords = "|".join(["空格" if "".join(kv) == '  ' else kv[0] if kv[1] == "" else "%s -> %s" % kv for kv in trans])
 	result_string = get_result_string(trans)
 
 	# 检查是否有输出
