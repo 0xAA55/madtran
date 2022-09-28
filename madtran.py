@@ -162,6 +162,11 @@ particle_checkers_ending = [
 	"possessive particle",
 	"question particle",
 	"modal particle",
+	#"final particle"
+]
+
+rule_for_using_pinyin = [
+	"phonetic",
 	"final particle"
 ]
 
@@ -201,6 +206,12 @@ def is_particle(comment):
 def is_mountain(comment):
 	for hint in mountain_name_hints:
 		if comment.startswith(hint):
+			return True
+	return False
+
+def is_use_pinyin(comment):
+	for rule in rule_for_using_pinyin:
+		if rule in comment:
 			return True
 	return False
 
@@ -273,6 +284,7 @@ def get_best_random_expl(word):
 		return word, False
 	wpy = " ".join([p[0] for p in pinyin(word, style=Style.TONE3, neutral_tone_with_five=True)])
 	wpyu = wpy.upper()
+	wpyn = ''.join(c for c in wpy if c.isalpha())
 
 	# 遍历查阅到的字典项，为进行大小写不敏感的拼音查找而复制出全大写的拼音项。
 	upperlook = {}
@@ -303,14 +315,35 @@ def get_best_random_expl(word):
 
 	# 检查内容是不是需要的
 	def check_comment(cw, comment):
-		nonlocal cand, seealsos, raw_comments
+		nonlocal seealsos, raw_comments
 		global pruned, extended, redirected, removed_expl
+
+		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
+		remo = {"%s -> %s" % (cw, comment)}
+
+		# 对“非另见”的释义移除进行提示。
+		if cw == word: removed_expl |= remo
+
+		def add_to_cand(cmnt):
+			nonlocal cand, cand_from
+			global removed_expl
+			# 筛选需要的
+			cand |= {cmnt}
+			cand_from[cmnt] = cw # 反向查询
+			removed_expl -= remo # 实际上没有被移除时，从“已移除项”里排除。
+
+		if is_use_pinyin(comment):
+			raw_comments[wpyn] = comment
+			add_to_cand(wpyn)
+			return
 
 		# 提取引号里的内容
 		quoteds = extract_quoteds(comment)
 
-		# 去掉括弧里的内容，并截断逗号后面的内容
+		# 记录原始释义
 		before_prune = comment
+
+		# 去掉括弧里的内容，并截断逗号后面的内容
 		if comment not in don_not_filter:
 			comment = remove_parenthesis(comment, "()")
 			comment = remove_parenthesis(comment, "{}")
@@ -324,12 +357,6 @@ def get_best_random_expl(word):
 			return
 		else:
 			raw_comments[comment] = before_prune
-
-		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
-		remo = {"%s -> %s" % (cw, before_prune)}
-
-		# 只提示完全吻合的词
-		if cw == word: removed_expl |= remo
 
 		# 去掉“particle”类型的解释，即语素描述
 		if is_particle(comment):
@@ -357,10 +384,8 @@ def get_best_random_expl(word):
 		if is_unwanted(comment):
 			return
 
-		# 筛选需要的
-		cand |= {comment}
-		cand_from[comment] = cw # 反向查询
-		removed_expl -= remo # 实际上没有被移除时，从“已移除项”里排除。
+		# 添加至候选项
+		add_to_cand(comment)
 
 	# 找到后，处理每一个解释项，删掉不要的解释项，并记录“另见”
 	for comment in try_match_pinyin(expl):
