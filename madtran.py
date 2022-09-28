@@ -134,7 +134,7 @@ unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']'
 	'opposite:'
 ]
 relation_checkers = [('单', 'unit of ')]
-to_be_removed = [ 'fig.', 'lit.', 'sb', 'sth', '...', '(completed action marker)' ]
+to_be_removed = [ 'fig.', 'lit.', 'sb ', 'sth ', ' sb', ' sth', '...', '(completed action marker)' ]
 to_be_removed_heading = ['to ', 'refers to ']
 to_remove_ending_punctuations = set(';.?!')
 
