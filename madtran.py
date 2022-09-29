@@ -162,7 +162,7 @@ particle_checkers_ending = [
 	"possessive particle",
 	"question particle",
 	"modal particle",
-	#"final particle"
+	"final particle"
 ]
 
 rule_for_using_pinyin = [
@@ -272,7 +272,17 @@ def prune_place_name(comment):
 			break
 	return " ".join(ret)
 
-def get_best_random_expl(word):
+checked_options = set()
+
+def get_best_random_expl(word, **kwargs):
+	def check_bool_kwargs(keyword):
+		global checked_options
+		checked_options |= {keyword}
+		try:
+			return bool(kwargs[keyword])
+		except KeyError:
+			return False
+
 	global pruned, extended, redirected, removed_expl, redirect_chosen
 	scwords = {word}
 	try:
@@ -332,10 +342,11 @@ def get_best_random_expl(word):
 			cand_from[cmnt] = cw # 反向查询
 			removed_expl -= remo # 实际上没有被移除时，从“已移除项”里排除。
 
-		if is_use_pinyin(comment):
-			raw_comments[wpyn] = comment
-			add_to_cand(wpyn)
-			return
+		if check_bool_kwargs('no-pinyin') == False:
+			if is_use_pinyin(comment):
+				raw_comments[wpyn] = comment
+				add_to_cand(wpyn)
+				return
 
 		# 提取引号里的内容
 		quoteds = extract_quoteds(comment)
@@ -440,8 +451,16 @@ def get_best_random_expl(word):
 	if len(cand) == 0:
 		return word, False
 
-	# 否则从剩下的候选项里，瞎几把挑一个。
-	chcom = random.choice(list(cand))
+	# 准备从候选项里挑选内容
+	if check_bool_kwargs('shortest'):
+		# 挑选最短候选项
+		chcom = sorted(cand, key=len)[0]
+	elif check_bool_kwargs('longest'):
+		# 挑选最长候选项
+		chcom = sorted(cand, key=len)[1]
+	else:
+		# 瞎几把挑选
+		chcom = random.choice(list(cand))
 
 	# 如果发生转义查询，则找回这个释义对应的辞头
 	try:
@@ -491,7 +510,7 @@ def merge_translation_result(trans):
 		result += [(texbuf, tranbuf)]
 	return result
 
-def madtran(text):
+def madtran(text, **kwargs):
 	# 根据可能的词语长度，截取输入的句子来查字典找释义。
 	search_range = [8, 7, 6, 5, 4, 3, 2, 1]
 	search_range += list(range(max(search_range) + 1, cedict_maxkeylen + 1))
@@ -507,7 +526,7 @@ def madtran(text):
 		# 进行遍历查词，从最短的词开始查。
 		for wl in search_range:
 			word = text[:wl]
-			tran, status = get_best_random_expl(word)
+			tran, status = get_best_random_expl(word, **kwargs)
 			if status == False:
 				wl += 1
 			else:
@@ -558,14 +577,6 @@ def get_result_string(trans):
 		result += '.'
 	return result
 
-def usage():
-	print("用法：madtran <中文内容>")
-	print("使用`CEDict`中英字典，对中文内容进行一个查字典式的翻译，然后使用AI语法纠正器纠正语法，进行一个莽夫式强行翻译。")
-	print("莽夫式翻译可以模拟一个不会中文的人（手上却有中英字典）通过查字典进行逐词翻译，然后瞎几把选择释义（因为看不懂）造句。")
-	print("造句后，句子很可能是语法不对的，于是使用现代赛博科技人工智能英语语法纠正器对句子的语法进行一个纠正。")
-	print("纠正后，自动使用谷歌翻译再给翻译回中文，以对比翻译效果。")
-	exit()
-
 class redirect_std_streams(object):
     def __init__(self, stdout=None, stderr=None):
         self._stdout = stdout or sys.stdout
@@ -584,14 +595,49 @@ class redirect_std_streams(object):
 if __name__ == '__main__':
 	import googletrans
 	from httpcore import SyncHTTPProxy
-	text = " ".join(sys.argv[1:])
-	if len(text) == 0:
+
+	def usage():
+		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--no-how] <中文内容>")
+		print("参数：")
+		print("  --shortest：选用最短候选词")
+		print("  --longest：选用最长候选词")
+		print("  --no-ai：不进行AI修正")
+		print("  --no-pinyin：不进行拼音语素检查")
+		print("  --no-how：不显示查询的具体过程")
+		print("  --help：显示此帮助")
+		print("使用`CEDict`中英字典，对中文内容进行一个查字典式的翻译，然后使用AI语法纠正器纠正语法，进行一个莽夫式强行翻译。")
+		print("莽夫式翻译可以模拟一个不会中文的人（手上却有中英字典）通过查字典进行逐词翻译，然后瞎几把选择释义（因为看不懂）造句。")
+		print("造句后，句子很可能是语法不对的，于是使用现代赛博科技人工智能英语语法纠正器对句子的语法进行一个纠正。")
+		print("纠正后，自动使用谷歌翻译再给翻译回中文，以对比翻译效果。")
+		exit()
+
+	text = ""
+	options = {}
+	for argi in range(1, len(sys.argv)):
+		arg = sys.argv[argi]
+		if arg.startswith('--'):
+			akv = arg[2:].split('=', 1)
+			if len(akv) < 2: akv += ['True']
+			ak, av = akv
+			options[ak] = av
+		else:
+			text = " ".join(sys.argv[argi:])
+			break
+	def check_bool_options(keyword):
+		global checked_options
+		checked_options |= {keyword}
+		try:
+			return bool(options[keyword])
+		except KeyError:
+			return False
+
+	if len(text) == 0 or check_bool_options('help'):
 		usage()
 
 	print("正在进行莽夫式翻译。")
 
 	# 我们的按词翻译方案
-	trans = madtran(text)
+	trans = madtran(text, **options)
 	tranwords = "|".join(["空格" if "".join(kv) == '  ' else kv[0] if kv[1] == "" else "%s -> %s" % kv for kv in trans])
 	result_string = get_result_string(trans)
 
@@ -629,21 +675,31 @@ if __name__ == '__main__':
 				print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
 		except TypeError:
 			pass
-	show_comment(extended, "扩展查询：")
-	show_comment(removed_expl, "移除的字典释义：\n* ", '\n* ')
-	show_comment(redirected, "转义查询：")
-	show_comment(redirect_chosen, "采用的转义查询：")
-	show_comment(pruned, "释义简化：\n* ", '\n* ')
+	if check_bool_options('no-how') == False:
+		show_comment(extended, "扩展查询：")
+		show_comment(removed_expl, "移除的字典释义：\n* ", '\n* ')
+		show_comment(redirected, "转义查询：")
+		show_comment(redirect_chosen, "采用的转义查询：")
+		show_comment(pruned, "释义简化：\n* ", '\n* ')
 	print("莽夫式翻译结果：\n%s" % (tranwords))
-	print("AI语法纠正：")
-	print("纠正前：%s" % (result_string))
-	print("谷歌翻译：%s" % (translated_nc))
-	print("正在对生成的英文句子进行 AI 纠正。")
 
-	corrected = get_corrected(result_string)
-	translated_co = get_translated(corrected)
-	if result_string.lower() != corrected.lower() and translated_nc != translated_co:
-		print("纠正后：%s" % (corrected))
-		print("谷歌翻译：%s" % (translated_co))
+	if check_bool_options('no-ai') == False:
+		print("AI语法纠正：")
+		print("纠正前：%s" % (result_string))
+		print("谷歌翻译：%s" % (translated_nc))
+		print("正在对生成的英文句子进行 AI 纠正。")
+
+		corrected = get_corrected(result_string)
+		translated_co = get_translated(corrected)
+		if result_string.lower() != corrected.lower() and translated_nc != translated_co:
+			print("纠正后：%s" % (corrected))
+			print("谷歌翻译：%s" % (translated_co))
+		else:
+			print("纠正后结果与纠正前一致。")
 	else:
-		print("纠正后结果与纠正前一致。")
+		print("生成句子：%s" % (result_string))
+		print("谷歌翻译：%s" % (translated_nc))
+
+	unchecked_options = set(options.keys()) - checked_options
+	if len(unchecked_options):
+		print("未知选项：--" + "，--".join(unchecked_options))
