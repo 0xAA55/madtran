@@ -511,9 +511,19 @@ def merge_translation_result(trans):
 	return result
 
 def madtran(text, **kwargs):
+	def check_bool_kwargs(keyword):
+		global checked_options
+		checked_options |= {keyword}
+		try:
+			return bool(kwargs[keyword])
+		except KeyError:
+			return False
 	# 根据可能的词语长度，截取输入的句子来查字典找释义。
-	search_range = [8, 7, 6, 5, 4, 3, 2, 1]
-	search_range += list(range(max(search_range) + 1, cedict_maxkeylen + 1))
+	if check_bool_kwargs("by-char"):
+		search_range = range(cedict_maxkeylen + 1)
+	else:
+		search_range = [8, 7, 6, 5, 4, 3, 2, 1]
+		search_range += list(range(max(search_range) + 1, cedict_maxkeylen + 1))
 	trans = []
 	text = text.replace('\n', ' ')
 	while len(text):
@@ -597,14 +607,15 @@ if __name__ == '__main__':
 	from httpcore import SyncHTTPProxy
 
 	def usage():
-		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--no-how] <中文内容>")
+		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--verbose] [--by-char] <中文内容>")
 		print("参数：")
+		print("  --help：显示此帮助")
 		print("  --shortest：选用最短候选词")
 		print("  --longest：选用最长候选词")
 		print("  --no-ai：不进行AI修正")
 		print("  --no-pinyin：不进行拼音语素检查")
-		print("  --no-how：不显示查询的具体过程")
-		print("  --help：显示此帮助")
+		print("  --verbose：显示查询的具体过程")
+		print("  --by-char：进行逐字查词")
 		print("使用`CEDict`中英字典，对中文内容进行一个查字典式的翻译，然后使用AI语法纠正器纠正语法，进行一个莽夫式强行翻译。")
 		print("莽夫式翻译可以模拟一个不会中文的人（手上却有中英字典）通过查字典进行逐词翻译，然后瞎几把选择释义（因为看不懂）造句。")
 		print("造句后，句子很可能是语法不对的，于是使用现代赛博科技人工智能英语语法纠正器对句子的语法进行一个纠正。")
@@ -675,7 +686,7 @@ if __name__ == '__main__':
 				print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
 		except TypeError:
 			pass
-	if check_bool_options('no-how') == False:
+	if check_bool_options('verbose'):
 		show_comment(extended, "扩展查询：")
 		show_comment(removed_expl, "移除的字典释义：\n* ", '\n* ')
 		show_comment(redirected, "转义查询：")
