@@ -131,7 +131,8 @@ unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']'
 	'interjection of ',
 	'Kangxi radical ',
 	'radical in Chinese',
-	'opposite:'
+	'opposite:',
+	'courtesy or style name traditionally given to males aged 20 in dynastic China'
 ]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = [ 'fig.', 'lit.', 'sb ', 'sth ', ' sb', ' sth', '...', '(completed action marker)' ]
