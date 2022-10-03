@@ -608,7 +608,7 @@ if __name__ == '__main__':
 	from httpcore import SyncHTTPProxy
 
 	def usage():
-		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--verbose] [--by-char] <中文内容>")
+		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--verbose] [--by-char] [--only-result] [--only-ai-result] [--only-result-tb] [--only-ai-result-tb] <中文内容>")
 		print("参数：")
 		print("  --help：显示此帮助")
 		print("  --shortest：选用最短候选词")
@@ -617,6 +617,10 @@ if __name__ == '__main__':
 		print("  --no-pinyin：不进行拼音语素检查")
 		print("  --verbose：显示查询的具体过程")
 		print("  --by-char：进行逐字查词")
+		print("  --only-result：仅输出结果句子")
+		print("  --only-result-tb：仅输出结果句子被谷歌翻译回的中文句子")
+		print("  --only-ai-result：仅输出 AI 纠正后的结果句子")
+		print("  --only-ai-result-tb：仅输出 AI 纠正后的结果句子被谷歌翻译回的中文句子")
 		print("使用`CEDict`中英字典，对中文内容进行一个查字典式的翻译，然后使用AI语法纠正器纠正语法，进行一个莽夫式强行翻译。")
 		print("莽夫式翻译可以模拟一个不会中文的人（手上却有中英字典）通过查字典进行逐词翻译，然后瞎几把选择释义（因为看不懂）造句。")
 		print("造句后，句子很可能是语法不对的，于是使用现代赛博科技人工智能英语语法纠正器对句子的语法进行一个纠正。")
@@ -642,21 +646,50 @@ if __name__ == '__main__':
 			return bool(options[keyword])
 		except KeyError:
 			return False
+	def check_any_bool_options(*keywords):
+		for usages in keywords:
+			if check_bool_options(usages):
+				return True
+		return False
 
 	if len(text) == 0 or check_bool_options('help'):
 		usage()
 
-	print("正在进行莽夫式翻译。")
+	wrongly_usages = []
+	def check_arg_conflict(*conflist_args):
+		global wrongly_usages
+		confliction = set()
+		for arg in conflist_args:
+			if check_bool_options(arg):
+				confliction |= {arg}
+		if len(confliction) > 1:
+			wrongly_usages += [confliction]
+
+	check_arg_conflict('verbose', 'only-result', 'only-result-tb', 'only-ai-result', 'only-ai-result-tb')
+	check_arg_conflict('no-ai', 'only-ai-result', 'only-ai-result-tb')
+	if len(wrongly_usages):
+		for confliction in wrongly_usages:
+			print('--%s 用法冲突。' % ('、--'.join(confliction)))
+		exit()
+
+	clean_output = check_any_bool_options('only-result', 'only-result-tb', 'only-ai-result', 'only-ai-result-tb')
+	if not clean_output:
+		print("正在进行莽夫式翻译。")
 
 	# 我们的按词翻译方案
 	trans = madtran(text, **options)
 	tranwords = "|".join(["空格" if "".join(kv) == '  ' else kv[0] if kv[1] == "" else "%s -> %s" % kv for kv in trans])
 	result_string = get_result_string(trans)
 
-	# 检查是否有输出
+	if check_bool_options("only-result"):
+		print(result_string)
+		exit()
+
+	# 检查是否有输出，有输出才使用谷歌翻译
 	if len(result_string) == 0:
-		print("原文：%s" % (text))
-		print("原始结果：<空>")
+		if not clean_output:
+			print("原文：%s" % (text))
+			print("原始结果：<空>")
 		exit()
 
 	if USE_PROXY:
@@ -678,31 +711,42 @@ if __name__ == '__main__':
 			return Caribe.caribe_corrector(text)
 
 	translated_nc = get_translated(result_string)
+	if check_bool_options("only-result-tb"):
+		print(translated_nc)
+		exit()
 
-	print("已完成莽夫式翻译。")
-	print("原文：%s" % (text))
-	def show_comment(comset, prompt, delim='，'):
-		try:
-			if len(comset):
-				print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
-		except TypeError:
-			pass
-	if check_bool_options('verbose'):
-		show_comment(extended, "扩展查询：")
-		show_comment(removed_expl, "移除的字典释义：\n* ", '\n* ')
-		show_comment(redirected, "转义查询：")
-		show_comment(redirect_chosen, "采用的转义查询：")
-		show_comment(pruned, "释义简化：\n* ", '\n* ')
-	print("莽夫式翻译结果：\n%s" % (tranwords))
+	if not clean_output:
+		print("已完成莽夫式翻译。")
+		print("原文：%s" % (text))
+		def show_comment(comset, prompt, delim='，'):
+			try:
+				if len(comset):
+					print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
+			except TypeError:
+				pass
+		if check_bool_options('verbose'):
+			show_comment(extended, "扩展查询：")
+			show_comment(removed_expl, "移除的字典释义：\n* ", '\n* ')
+			show_comment(redirected, "转义查询：")
+			show_comment(redirect_chosen, "采用的转义查询：")
+			show_comment(pruned, "释义简化：\n* ", '\n* ')
+		print("莽夫式翻译结果：\n%s" % (tranwords))
 
 	if check_bool_options('no-ai') == False:
-		print("AI语法纠正：")
-		print("纠正前：%s" % (result_string))
-		print("谷歌翻译：%s" % (translated_nc))
-		print("正在对生成的英文句子进行 AI 纠正。")
+		if not clean_output:
+			print("AI语法纠正：")
+			print("纠正前：%s" % (result_string))
+			print("谷歌翻译：%s" % (translated_nc))
+			print("正在对生成的英文句子进行 AI 纠正。")
 
 		corrected = get_corrected(result_string)
+		if check_bool_options("only-ai-result"):
+			print(corrected)
+			exit()
 		translated_co = get_translated(corrected)
+		if check_bool_options("only-ai-result-tb"):
+			print(translated_co)
+			exit()
 		if result_string.lower() != corrected.lower() and translated_nc != translated_co:
 			print("纠正后：%s" % (corrected))
 			print("谷歌翻译：%s" % (translated_co))
