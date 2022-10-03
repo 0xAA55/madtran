@@ -458,7 +458,7 @@ def get_best_random_expl(word, **kwargs):
 		chcom = sorted(cand, key=len)[0]
 	elif check_bool_kwargs('longest'):
 		# 挑选最长候选项
-		chcom = sorted(cand, key=len)[1]
+		chcom = sorted(cand, key=len)[-1]
 	else:
 		# 瞎几把挑选
 		chcom = random.choice(list(cand))
