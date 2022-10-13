@@ -126,7 +126,13 @@ def get_related_words(word):
 	return related
 
 also_checkers = [ "variant of ", "equivalent of ", "equivalent: ", "see ", "see also ", "also written "]
-unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']', '|',
+unwant_checkers = [
+	'CL:',
+	'pr.',
+	'used in ',
+	'used before ',
+	'abbr. ',
+	'[', ']', '|',
 	'classifier ',
 	'interjection of ',
 	'Kangxi radical ',
@@ -135,8 +141,13 @@ unwant_checkers = [ 'CL:', 'pr.', 'used in ', 'used before ', 'abbr. ', '[', ']'
 	'courtesy or style name traditionally given to males aged 20 in dynastic China'
 ]
 relation_checkers = [('单', 'unit of ')]
-to_be_removed = [ 'fig.', 'lit.', 'sb ', 'sth ', ' sb', ' sth', '...', '(completed action marker)' ]
-to_be_removed_heading = ['to ', 'refers to ']
+to_be_removed = ['fig.', 'lit.', 'sb ', 'sth ', ' sb', ' sth', 'to ', '...', '(completed action marker)' ]
+to_be_removed_heading = [
+	'refers to ',
+	'marker of ',
+	'marker for ',
+	'marker used '
+]
 to_remove_ending_punctuations = set(';.?!')
 
 particle_checkers_starting = [
@@ -480,8 +491,9 @@ def get_best_random_expl(word, **kwargs):
 	for wr in to_be_removed:
 		chcom = chcom.replace(wr, '')
 	for wr in to_be_removed_heading:
-		if chcom.startswith(wr):
-			chcom = chcom[len(wr):].strip()
+		#if chcom.startswith(wr):
+		#	chcom = chcom[len(wr):].strip()
+		chcom = chcom.split(wr, 1)[0]
 	if before_prune != chcom:
 		pruned |= {"%s：%s -> %s" % (word, before_prune, chcom)}
 	return chcom, True
