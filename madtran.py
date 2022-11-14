@@ -138,7 +138,16 @@ unwant_checkers = [
 	'Kangxi radical ',
 	'radical in Chinese',
 	'opposite:',
-	'courtesy or style name traditionally given to males aged 20 in dynastic China'
+	'courtesy or style name traditionally given to males aged 20 in dynastic China',
+	'prefix for ',
+	'suffix used ',
+	'noun suffix',
+	'diminutive suffix',
+	'as suffix ',
+	'nominalizing suffix',
+	'adjective suffix',
+	'verb suffix',
+	'ship suffix'
 ]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = ['fig.', 'lit.', 'sb ', 'sth ', ' sb', ' sth', 'to ', '...', '(completed action marker)' ]
@@ -179,7 +188,9 @@ particle_checkers_ending = [
 
 rule_for_using_pinyin = [
 	"phonetic",
-	"final particle"
+	"final particle",
+	'postfix indicating ',
+	'feminine suffix'
 ]
 
 place_name_hints = [
@@ -202,7 +213,7 @@ mountain_name_hints = [
 	"Mt "
 ]
 
-don_not_filter = [
+do_not_filter = [
 	"(completed action marker)"
 ]
 
@@ -367,7 +378,7 @@ def get_best_random_expl(word, **kwargs):
 		before_prune = comment
 
 		# 去掉括弧里的内容，并截断逗号后面的内容
-		if comment not in don_not_filter:
+		if comment not in do_not_filter:
 			comment = remove_parenthesis(comment, "()")
 			comment = remove_parenthesis(comment, "{}")
 			comment = comment.split(',', 1)[0].strip()
