@@ -535,6 +535,11 @@ def merge_translation_result(trans):
 	return result
 
 def madtran(text, **kwargs):
+	global checked_options
+	checked_options |= {'custom-rules'}
+	custom_rules = kwargs['custom-rules']
+	fccr = {w[0] for w in custom_rules.keys()}
+	crw_sorted = sorted(custom_rules.keys(), key=len, reverse=True)
 	def check_bool_kwargs(keyword):
 		global checked_options
 		checked_options |= {keyword}
@@ -552,11 +557,20 @@ def madtran(text, **kwargs):
 	text = text.replace('\n', ' ')
 	while len(text):
 		# 过滤标点符号等字典里没有的东西
-		if text[0] not in firstchars:
+		if text[0] not in firstchars and text[0] not in fccr:
 			word = text[0]
 			trans += [(word, full2half(word))]
 			text = text[1:]
 			continue
+		# 先从自定义规则里开始查
+		crw_hit = False
+		for crw in crw_sorted:
+			if text.startswith(crw):
+				trans += [(crw, custom_rules[crw])]
+				text = text[len(crw):]
+				crw_hit = True
+				break
+		if crw_hit: continue
 		# 进行遍历查词，从最短的词开始查。
 		for wl in search_range:
 			word = text[:wl]
@@ -631,7 +645,7 @@ if __name__ == '__main__':
 	from httpcore import SyncHTTPProxy
 
 	def usage():
-		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--verbose] [--by-char] [--only-result] [--only-ai-result] [--only-result-tb] [--only-ai-result-tb] <中文内容>")
+		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--verbose] [--by-char] [--only-result] [--only-ai-result] [--only-result-tb] [--only-ai-result-tb] [--custom-rules=a:b,c:d] <中文内容>")
 		print("参数：")
 		print("  --help：显示此帮助")
 		print("  --shortest：选用最短候选词")
@@ -644,6 +658,7 @@ if __name__ == '__main__':
 		print("  --only-result-tb：仅输出结果句子被谷歌翻译回的中文句子")
 		print("  --only-ai-result：仅输出 AI 纠正后的结果句子")
 		print("  --only-ai-result-tb：仅输出 AI 纠正后的结果句子被谷歌翻译回的中文句子")
+		print("  --custom-rules：指定自定义规则，特定单词按自定义规则进行翻译。规则内容格式例：蟹:rust,答辩:fecet")
 		print("使用`CEDict`中英字典，对中文内容进行一个查字典式的翻译，然后使用AI语法纠正器纠正语法，进行一个莽夫式强行翻译。")
 		print("莽夫式翻译可以模拟一个不会中文的人（手上却有中英字典）通过查字典进行逐词翻译，然后瞎几把选择释义（因为看不懂）造句。")
 		print("造句后，句子很可能是语法不对的，于是使用现代赛博科技人工智能英语语法纠正器对句子的语法进行一个纠正。")
@@ -692,8 +707,15 @@ if __name__ == '__main__':
 	check_arg_conflict('no-ai', 'only-ai-result', 'only-ai-result-tb')
 	if len(wrongly_usages):
 		for confliction in wrongly_usages:
-			print('--%s 用法冲突。' % ('、--'.join(confliction)))
+			print(f'--{"、--".join(confliction)} 用法冲突。')
 		exit()
+
+	if 'custom-rules' in options:
+		try:
+			options['custom-rules'] = { w.strip(): c.strip() for w, c in [rule.split(':', 1) for rule in options['custom-rules'].split(',')]}
+		except:
+			print('解析自定义翻译规则失败。自定义翻译规则的格式应当是每条规则使用冒号分隔单词和释义，并用逗号分隔多条规则。如果需要插入空格则需要使用双引号把整个命令行参数（包括`--custom-rules=`在内）包起来。')
+			exit()
 
 	clean_output = check_any_bool_options('only-result', 'only-result-tb', 'only-ai-result', 'only-ai-result-tb')
 	if not clean_output:
