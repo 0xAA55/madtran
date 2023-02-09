@@ -537,7 +537,10 @@ def merge_translation_result(trans):
 def madtran(text, **kwargs):
 	global checked_options
 	checked_options |= {'custom-rules'}
-	custom_rules = kwargs['custom-rules']
+	try:
+		custom_rules = kwargs['custom-rules']
+	except KeyError:
+		custom_rules = {}
 	fccr = {w[0] for w in custom_rules.keys()}
 	crw_sorted = sorted(custom_rules.keys(), key=len, reverse=True)
 	def check_bool_kwargs(keyword):
