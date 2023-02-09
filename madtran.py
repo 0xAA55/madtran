@@ -35,8 +35,8 @@ if __name__ == '__main__':
 			import requests
 			if USE_PROXY:
 				proxies = {
-					"http": "socks5h://%s:%d" % (PROXY_ADDR, PROXY_PORT),
-					"https": "socks5h://%s:%d" % (PROXY_ADDR, PROXY_PORT)
+					"http": f"socks5h://{PROXY_ADDR}:{PROXY_PORT}",
+					"https": f"socks5h://{PROXY_ADDR}:{PROXY_PORT}"
 				}
 				resp = None
 				try:
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 					resp.raw.decode_content = True
 					f.write(resp.content)
 			else:
-				print("下载字典失败：%d：%s" % (resp.status_code, resp.content))
+				print(f"下载字典失败：{resp.status_code}：{resp.content}")
 				exit()
 
 		if not os.path.exists(cedict_srcfile):
@@ -352,7 +352,7 @@ def get_best_random_expl(word, **kwargs):
 		global pruned, extended, redirected, removed_expl
 
 		# 此处统计“已移除项”，在去掉括弧内容和逗号内容后，把释义先添加到“已移除项”里，在最后没有被排除的时候再排除。
-		remo = {"%s -> %s" % (cw, comment)}
+		remo = {f"{cw} -> {comment}"}
 
 		# 对“非另见”的释义移除进行提示。
 		if cw == word: removed_expl |= remo
