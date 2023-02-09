@@ -509,9 +509,22 @@ def get_best_random_expl(word, **kwargs):
 		pruned |= {"%s：%s -> %s" % (word, before_prune, chcom)}
 	return chcom, True
 
+punct_replace_rule = {
+	'，': ',',
+	'。': '.',
+	'、': ',',
+	'“': '"',
+	'”': '"',
+	'‘': "'",
+	'’': "'",
+	'【': '[',
+	'】': ']'
+}
+
 full2half_d = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
 full2half_d[0x3000] = 0x20
-full2half_d[ord('。')] = ord('.')
+for zhp, enp in punct_replace_rule.items():
+	full2half_d[ord(zhp)] = ord(enp)
 def full2half(f2h):
 	return f2h.translate(full2half_d)
 
