@@ -147,7 +147,8 @@ unwant_checkers = [
 	'nominalizing suffix',
 	'adjective suffix',
 	'verb suffix',
-	'ship suffix'
+	'ship suffix',
+	'interjection indicating'
 ]
 relation_checkers = [('单', 'unit of ')]
 to_be_removed = ['fig.', 'lit.', 'sb ', 'sth ', ' sb', ' sth', 'to ', '...', '(completed action marker)' ]
@@ -642,19 +643,23 @@ def get_result_string(trans):
 	return result
 
 class redirect_std_streams(object):
-    def __init__(self, stdout=None, stderr=None):
-        self._stdout = stdout or sys.stdout
-        self._stderr = stderr or sys.stderr
+	def __init__(self, stdout=None, stderr=None):
+		self._stdout = stdout or sys.stdout
+		self._stderr = stderr or sys.stderr
 
-    def __enter__(self):
-        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-        self.old_stdout.flush(); self.old_stderr.flush()
-        sys.stdout, sys.stderr = self._stdout, self._stderr
+	def __enter__(self):
+		self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+		self.old_stdout.flush(); self.old_stderr.flush()
+		sys.stdout, sys.stderr = self._stdout, self._stderr
+		os.environ['HTTP_PROXY'] = f'socks5h://{PROXY_ADDR}:{PROXY_PORT}'
+		os.environ['HTTPS_PROXY'] = f'socks5h://{PROXY_ADDR}:{PROXY_PORT}'
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._stdout.flush(); self._stderr.flush()
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
+	def __exit__(self, exc_type, exc_value, traceback):
+		self._stdout.flush(); self._stderr.flush()
+		sys.stdout = self.old_stdout
+		sys.stderr = self.old_stderr
+		del os.environ['HTTP_PROXY']
+		del os.environ['HTTPS_PROXY']
 
 if __name__ == '__main__':
 	import googletrans
@@ -768,8 +773,16 @@ if __name__ == '__main__':
 			return "调用谷歌翻译失败。"
 
 	def get_corrected(text):
-		with redirect_std_streams(stdout=sys.stderr):
-			return Caribe.caribe_corrector(text)
+		retry = 0
+		why_retry = None
+		while retry < 3:
+			try:
+				with redirect_std_streams(stdout=sys.stderr):
+					return Caribe.caribe_corrector(text)
+			except Exception as e:
+				if why_retry is None: why_retry = str(e)
+				retry += 1
+		return f'AI 自动纠正失败：{why_retry}'
 
 	translated_nc = get_translated(result_string)
 	if check_bool_options("only-result-tb"):
