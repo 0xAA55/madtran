@@ -9,8 +9,35 @@ import Caribe # 需要 Python 有 sqlite3 模块且能安装 torch
 from pypinyin import pinyin, Style
 
 USE_PROXY = True
-PROXY_ADDR = "localhost"
-PROXY_PORT = 1080
+DEF_PROXY_TYPE = "socks5h"
+DEF_PROXY_ADDR = "localhost"
+DEF_PROXY_PORT = 1080
+
+try:
+	HTTP_PROXY = os.environ['HTTP_PROXY']
+except KeyError:
+	try:
+		HTTP_PROXY = os.environ['http_proxy']
+	except KeyError:
+		HTTP_PROXY = f'{DEF_PROXY_TYPE}://{DEF_PROXY_ADDR}:{DEF_PROXY_PORT}'
+
+try:
+	HTTPS_PROXY = os.environ['HTTPS_PROXY']
+except KeyError:
+	try:
+		HTTPS_PROXY = os.environ['https_proxy']
+	except KeyError:
+		HTTPS_PROXY = HTTP_PROXY
+
+try:
+	PROXY_TYPE, PROXY_ADDR_PORT = HTTP_PROXY.split('://', 1)
+	PROXY_ADDR, PROXY_PORT = PROXY_ADDR_PORT.split(':', 1)
+	PROXY_PORT = int(PROXY_PORT)
+except IndexError:
+	if len(HTTP_PROXY) == 0:
+		USE_PROXY = False
+	else:
+		print("Parse environ `HTTP_PROXY` failed.")
 
 if __name__ == '__main__':
 	cedict_url = "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.zip"
@@ -35,8 +62,8 @@ if __name__ == '__main__':
 			import requests
 			if USE_PROXY:
 				proxies = {
-					"http": f"socks5h://{PROXY_ADDR}:{PROXY_PORT}",
-					"https": f"socks5h://{PROXY_ADDR}:{PROXY_PORT}"
+					"http": HTTP_PROXY,
+					"https": HTTPS_PROXY
 				}
 				resp = None
 				try:
@@ -651,8 +678,8 @@ class redirect_std_streams(object):
 		self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
 		self.old_stdout.flush(); self.old_stderr.flush()
 		sys.stdout, sys.stderr = self._stdout, self._stderr
-		os.environ['HTTP_PROXY'] = f'socks5h://{PROXY_ADDR}:{PROXY_PORT}'
-		os.environ['HTTPS_PROXY'] = f'socks5h://{PROXY_ADDR}:{PROXY_PORT}'
+		os.environ['HTTP_PROXY'] = HTTP_PROXY
+		os.environ['HTTPS_PROXY'] = HTTPS_PROXY
 
 	def __exit__(self, exc_type, exc_value, traceback):
 		self._stdout.flush(); self._stderr.flush()
