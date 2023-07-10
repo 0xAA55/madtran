@@ -469,9 +469,9 @@ def get_best_random_expl(word, **kwargs):
 			for also in iter_seealsos:
 				alsoexpl = lookup(also)
 				if alsoexpl is None:
-					print("无法查询的“另见”条目：%s" % (also))
+					print(f"无法查询的“另见”条目：{also}")
 					continue
-				redirected |= {"%s -> %s" % (word, also)}
+				redirected |= {f"{word} -> {also}"}
 				for comment in try_match_pinyin(alsoexpl):
 					check_comment(also, comment)
 
@@ -483,11 +483,11 @@ def get_best_random_expl(word, **kwargs):
 			if len(relateds) == 0:
 				no_related = True
 			else:
-				extended |= {("%s -> %s" % (word, "、".join(list(relateds)[:8]))).strip()}
+				extended |= {(f'{word} -> {"、".join(list(relateds)[:8])}').strip()}
 				for related in relateds:
 					relatedexpl = lookup(related)
 					if relatedexpl is None:
-						print("无法查询的“关联”条目：%s" % (related))
+						print(f"无法查询的“关联”条目：{related}")
 						continue
 					for comment in try_match_pinyin(relatedexpl):
 						check_comment(related, comment)
@@ -517,7 +517,7 @@ def get_best_random_expl(word, **kwargs):
 	try:
 		chword = cand_from[chcom]
 		if word != chword:
-			redirect_chosen |= {"%s -> %s" % (word, chword)}
+			redirect_chosen |= {f"{word} -> {chword}"}
 			word = chword
 	except KeyError:
 		pass
@@ -534,7 +534,7 @@ def get_best_random_expl(word, **kwargs):
 		#	chcom = chcom[len(wr):].strip()
 		chcom = chcom.split(wr, 1)[0]
 	if before_prune != chcom:
-		pruned |= {"%s：%s -> %s" % (word, before_prune, chcom)}
+		pruned |= {f"{word}：{before_prune} -> {chcom}"}
 	return chcom, True
 
 punct_replace_rule = {
@@ -781,7 +781,7 @@ if __name__ == '__main__':
 	# 检查是否有输出，有输出才使用谷歌翻译
 	if len(result_string) == 0:
 		if not clean_output:
-			print("原文：%s" % (text))
+			print(f"原文：{text}")
 			print("原始结果：<空>")
 		exit()
 
@@ -790,6 +790,8 @@ if __name__ == '__main__':
 		proxies = {"http" : proxy, "https" : proxy}
 	else:
 		proxies = None
+	if 'HTTP_PROXY' in os.environ: del os.environ['HTTP_PROXY']
+	if 'HTTPS_PROXY' in os.environ: del os.environ['HTTPS_PROXY']
 	translator = googletrans.Translator(proxies=proxies)
 
 	def get_translated(text):
@@ -818,11 +820,11 @@ if __name__ == '__main__':
 
 	if not clean_output:
 		print("已完成莽夫式翻译。")
-		print("原文：%s" % (text))
+		print(f"原文：{text}")
 		def show_comment(comset, prompt, delim='，'):
 			try:
 				if len(comset):
-					print("%s%s" % (prompt, delim.join(sorted(list(comset)))))
+					print(f"{prompt}{delim.join(sorted(list(comset)))}")
 			except TypeError:
 				pass
 		if check_bool_options('verbose'):
@@ -831,13 +833,13 @@ if __name__ == '__main__':
 			show_comment(redirected, "转义查询：")
 			show_comment(redirect_chosen, "采用的转义查询：")
 			show_comment(pruned, "释义简化：\n* ", '\n* ')
-		print("莽夫式翻译结果：\n%s" % (tranwords))
+		print(f"莽夫式翻译结果：\n{tranwords}")
 
 	if check_bool_options('no-ai') == False:
 		if not clean_output:
 			print("AI语法纠正：")
-			print("纠正前：%s" % (result_string))
-			print("谷歌翻译：%s" % (translated_nc))
+			print(f"纠正前：{result_string}")
+			print(f"谷歌翻译：{translated_nc}")
 			print("正在对生成的英文句子进行 AI 纠正。")
 
 		corrected = get_corrected(result_string)
@@ -849,13 +851,13 @@ if __name__ == '__main__':
 			print(translated_co)
 			exit()
 		if result_string.lower() != corrected.lower() and translated_nc != translated_co:
-			print("纠正后：%s" % (corrected))
-			print("谷歌翻译：%s" % (translated_co))
+			print(f"纠正后：{corrected}")
+			print(f"谷歌翻译：{translated_co}")
 		else:
 			print("纠正后结果与纠正前一致。")
 	else:
-		print("生成句子：%s" % (result_string))
-		print("谷歌翻译：%s" % (translated_nc))
+		print(f"生成句子：{result_string}")
+		print(f"谷歌翻译：{translated_nc}")
 
 	unchecked_options = set(options.keys()) - checked_options
 	if len(unchecked_options):
