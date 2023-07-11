@@ -15,17 +15,21 @@ DEF_PROXY_PORT = 1080
 
 try:
 	HTTP_PROXY = os.environ['HTTP_PROXY']
+	del os.environ['HTTP_PROXY']
 except KeyError:
 	try:
 		HTTP_PROXY = os.environ['http_proxy']
+		del os.environ['http_proxy']
 	except KeyError:
 		HTTP_PROXY = f'{DEF_PROXY_TYPE}://{DEF_PROXY_ADDR}:{DEF_PROXY_PORT}'
 
 try:
 	HTTPS_PROXY = os.environ['HTTPS_PROXY']
+	del os.environ['HTTPS_PROXY']
 except KeyError:
 	try:
 		HTTPS_PROXY = os.environ['https_proxy']
+		del os.environ['https_proxy']
 	except KeyError:
 		HTTPS_PROXY = HTTP_PROXY
 
