@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*
+import Caribe # 需要 Python 有 sqlite3 模块且能安装 torch
 import os
 import sys
 import json
 import time
 import random
-import Caribe # 需要 Python 有 sqlite3 模块且能安装 torch
 from pypinyin import pinyin, Style
 
 USE_PROXY = True
