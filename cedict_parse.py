@@ -80,11 +80,12 @@ cur.execute("CREATE TABLE tedict(tc TEXT PRIMARY KEY NOT NULL, tcdata TEXT NOT N
 cur.execute("CREATE TABLE firstchars(chr TEXT PRIMARY KEY NOT NULL)")
 cur.execute("CREATE TABLE metadata(key TEXT PRIMARY KEY NOT NULL, value INT NOT NULL)")
 for tc, sc in ctdict.items():
-	cur.execute("INSERT INTO ctdict(tc,sc) VALUES(?,?)", (tc, '\t'.join(list(sc))))
+	cur.execute("INSERT INTO ctdict(tc,sc) VALUES(?,?)", (tc, '\n'.join(list(sc))))
+splitter = '/'
 for sc, scdata in cedict.items():
-	cur.execute("INSERT INTO cedict(sc,scdata) VALUES(?,?)", (sc, '\t'.join(list(scdata))))
+	cur.execute("INSERT INTO cedict(sc,scdata) VALUES(?,?)", (sc, '\n'.join([f'{k}\t{splitter.join(v)}' for k, v in scdata.items()])))
 for tc, tcdata in tedict.items():
-	cur.execute("INSERT INTO tedict(tc,tcdata) VALUES(?,?)", (tc, '\t'.join(list(tcdata))))
+	cur.execute("INSERT INTO tedict(tc,tcdata) VALUES(?,?)", (tc, '\n'.join([f'{k}\t{splitter.join(v)}' for k, v in tcdata.items()])))
 for ch in firstchars:
 	cur.execute("INSERT INTO firstchars(chr) VALUES(?)", (ch))
 cur.execute("INSERT INTO metadata(key,value) VALUES(?,?)", ('cedict_maxkeylen', cedict_maxkeylen))
