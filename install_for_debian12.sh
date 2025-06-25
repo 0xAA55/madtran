@@ -12,7 +12,7 @@ echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
 
 export PYENV_ROOT="$HOME/.pyenv
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init - bash)"
+eval "$(pyenv init --path)"
 
 export PYTHON_CONFIGURE_OPTS="--enable-loadable-sqlite-extensions --disable-ipv6"
 pyenv install 3.9.23
