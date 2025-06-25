@@ -50,10 +50,11 @@ if __name__ == '__main__':
 	cedict_zipfile = makepath("cedict_1_0_ts_utf-8_mdbg.zip")
 	cedict_member = "cedict_ts.u8"
 	cedict_srcfile = makepath("cedict.txt")
-	cedict_pyfile = makepath("cedict_database.py")
-	if os.path.exists(cedict_pyfile) and time.time() - os.path.getmtime(cedict_pyfile) > 86400:
+	cedict_dbfile = makepath("madtran.db")
+	cedict_parser = makepath("cedict_parse.py")
+	if os.path.exists(cedict_dbfile) and time.time() - os.path.getmtime(cedict_dbfile) > 86400:
 		print("正在更新字典。")
-		os.remove(cedict_pyfile)
+		os.remove(cedict_dbfile)
 		if os.path.exists(cedict_zipfile):
 			os.remove(cedict_zipfile)
 			if os.path.exists(cedict_member):
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 				if os.path.exists(cedict_srcfile):
 					os.remove(cedict_srcfile)
 
-	if not os.path.exists(cedict_pyfile):
+	if not os.path.exists(cedict_dbfile):
 		if not os.path.exists(cedict_zipfile):
 			import requests
 			if USE_PROXY:
@@ -95,11 +96,25 @@ if __name__ == '__main__':
 				z.extract(cedict_member)
 			os.rename(cedict_member, cedict_srcfile)
 
-		print("正在解析CEDict")
 		import subprocess
-		subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.realpath(__file__)), "cedict_parse.py")])
+		print("正在解析CEDict")
+		subprocess.run([sys.executable, cedict_parser, cedict_dbfile])
 
-from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
+# from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
+
+import sqlite3
+con = sqlite3.connect(cedict_dbfile)
+cur = con.cursor()
+try:
+	ctdict = {k: v.split('\t') for k, v in cur.execute("SELECT * FROM ctdict").fetchall()}
+	cedict = {k: v.split('\t') for k, v in cur.execute("SELECT * FROM cedict").fetchall()}
+	firstchars = {t[0] for t in cur.execute("SELECT * FROM firstchars").fetchall()}
+	cedict_maxkeylen = cur.execute("SELECT * FROM metadata WHERE key='cedict_maxkeylen'").fetchall()[0][1]
+except sqlite3.OperationalError as e:
+	print(f'Size of database: {os.path.getsize(cedict_dbfile)}')
+	os.remove(cedict_dbfile)
+	print(e)
+	exit(1)
 
 pruned = set()
 extended = set()
