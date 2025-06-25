@@ -100,8 +100,6 @@ if __name__ == '__main__':
 		print("正在解析CEDict")
 		subprocess.run([sys.executable, cedict_parser, cedict_dbfile])
 
-# from cedict_database import ctdict, cedict, firstchars, cedict_maxkeylen
-
 import sqlite3
 con = sqlite3.connect(cedict_dbfile)
 cur = con.cursor()
