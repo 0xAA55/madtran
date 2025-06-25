@@ -14,6 +14,7 @@ if __name__ == '__main__':
 	tedict_maxkeylen = 1
 	with open("cedict.txt", "r", encoding="utf-8") as fr:
 		for line in fr:
+			line = line.strip()
 			if line[0] == '#': continue
 			cut = line.split(' ', 2)
 			tc = cut[0]
@@ -67,6 +68,35 @@ if __name__ == '__main__':
 			cedict_maxkeylen = max(cedict_maxkeylen, len(sc))
 			tedict_maxkeylen = max(tedict_maxkeylen, len(tc))
 
+	zi_parts = {}
+	with open(os.path.join("ids_db", "ids_lv2.txt"), "r", encoding="utf-8") as fr:
+		for line in fr:
+			line = line.strip()
+			if line[0] == '#': continue
+			zi, ids = line.split('\t', 1)
+			ids = ids.replace(';', '\t')
+			ids = ids.replace('⿰', '')
+			ids = ids.replace('⿱', '')
+			ids = ids.replace('⿲', '')
+			ids = ids.replace('⿳', '')
+			ids = ids.replace('⿴', '')
+			ids = ids.replace('⿵', '')
+			ids = ids.replace('⿶', '')
+			ids = ids.replace('⿷', '')
+			ids = ids.replace('⿼', '')
+			ids = ids.replace('⿸', '')
+			ids = ids.replace('⿹', '')
+			ids = ids.replace('⿺', '')
+			ids = ids.replace('⿽', '')
+			ids = ids.replace('⿻', '')
+			ids = ids.replace('⿿', '')
+			ids = ids.replace('⿾', '')
+			ids = ids.split('\t')
+			try:
+				zi_parts[zi] += ids
+			except KeyError:
+				zi_parts[zi] = ids
+
 	with open("cedict.json", "w", encoding="utf-8") as fw:
 		json.dump(cedict, fw, indent=4, ensure_ascii=False)
 
@@ -78,6 +108,7 @@ if __name__ == '__main__':
 	cur.execute("CREATE TABLE ctdict(tc TEXT PRIMARY KEY NOT NULL, sc TEXT NOT NULL)")
 	cur.execute("CREATE TABLE cedict(sc TEXT PRIMARY KEY NOT NULL, scdata TEXT NOT NULL)")
 	cur.execute("CREATE TABLE tedict(tc TEXT PRIMARY KEY NOT NULL, tcdata TEXT NOT NULL)")
+	cur.execute("CREATE TABLE zipart(zi TEXT PRIMARY KEY NOT NULL, ids TEXT NOT NULL)")
 	cur.execute("CREATE TABLE firstchars(chr TEXT PRIMARY KEY NOT NULL)")
 	cur.execute("CREATE TABLE metadata(key TEXT PRIMARY KEY NOT NULL, value INT NOT NULL)")
 	for tc, sc in ctdict.items():
@@ -89,6 +120,8 @@ if __name__ == '__main__':
 		cur.execute("INSERT INTO tedict(tc,tcdata) VALUES(?,?)", (tc, '\n'.join([f'{k}\t{splitter.join(v)}' for k, v in tcdata.items()])))
 	for ch in firstchars:
 		cur.execute("INSERT INTO firstchars(chr) VALUES(?)", (ch))
+	for zi, ids in zi_parts.items():
+		cur.execute("INSERT INTO zipart(zi, ids) VALUES(?,?)", (zi, '\t'.join(ids)))
 	cur.execute("INSERT INTO metadata(key,value) VALUES(?,?)", ('cedict_maxkeylen', cedict_maxkeylen))
 	cur.execute("INSERT INTO metadata(key,value) VALUES(?,?)", ('tedict_maxkeylen', tedict_maxkeylen))
 	con.commit()
