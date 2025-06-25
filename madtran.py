@@ -106,6 +106,7 @@ cur = con.cursor()
 try:
 	ctdict = {k: set(v.split('\n')) for k, v in cur.execute("SELECT * FROM ctdict").fetchall()}
 	cedict = {k: {kp:kc.split('/') for kp, kc in [p_c.split('\t') for p_c in v.split('\n')]} for k, v in cur.execute("SELECT * FROM cedict").fetchall()}
+	zipart = {k: v.split('\t') for k, v in cur.execute("SELECT * FROM zipart").fetchall()}
 	firstchars = {t[0] for t in cur.execute("SELECT * FROM firstchars").fetchall()}
 	cedict_maxkeylen = cur.execute("SELECT * FROM metadata WHERE key='cedict_maxkeylen'").fetchall()[0][1]
 except sqlite3.OperationalError as e:
@@ -619,10 +620,26 @@ def madtran(text, **kwargs):
 	while len(text):
 		# 过滤标点符号等字典里没有的东西
 		if text[0] not in firstchars and text[0] not in fccr:
-			word = text[0]
-			trans += [(word, full2half(word))]
-			text = text[1:]
-			continue
+			if text[0] not in zipart:
+				word = text[0]
+				trans += [(word, full2half(word))]
+				text = text[1:]
+				continue
+			else:
+				unknown = text[0]
+				dismantle = random.choice(zipart[unknown])
+				dismantle = remove_parenthesis(dismantle, '()')
+				dismantle = remove_parenthesis(dismantle, '{}')
+				dismantle = dismantle.strip()
+				if dismantle == '#':
+					word = unknown
+					trans += [(word, full2half(word))]
+					text = text[1:]
+					print(f'遇到不认识的汉字「{unknown}」。')
+				else:
+					text = dismantle + text[1:]
+					print(f'遇到不认识的汉字「{unknown}」，拆成偏旁部首「{dismantle}」')
+				continue
 		# 先从自定义规则里开始查
 		crw_hit = False
 		for crw in crw_sorted:
