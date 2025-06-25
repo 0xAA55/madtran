@@ -106,8 +106,8 @@ import sqlite3
 con = sqlite3.connect(cedict_dbfile)
 cur = con.cursor()
 try:
-	ctdict = {k: v.split('\t') for k, v in cur.execute("SELECT * FROM ctdict").fetchall()}
-	cedict = {k: v.split('\t') for k, v in cur.execute("SELECT * FROM cedict").fetchall()}
+	ctdict = {k: v for k, v in cur.execute("SELECT * FROM ctdict").fetchall()}
+	cedict = {k: {kp:kc.split('/') for kp, kc in [p_c.split('\t') for p_c in v.split('\n')]} for k, v in cur.execute("SELECT * FROM cedict").fetchall()}
 	firstchars = {t[0] for t in cur.execute("SELECT * FROM firstchars").fetchall()}
 	cedict_maxkeylen = cur.execute("SELECT * FROM metadata WHERE key='cedict_maxkeylen'").fetchall()[0][1]
 except sqlite3.OperationalError as e:
