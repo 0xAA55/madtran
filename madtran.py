@@ -54,7 +54,6 @@ if __name__ == '__main__':
 	cedict_parser = makepath("cedict_parse.py")
 	if os.path.exists(cedict_dbfile) and time.time() - os.path.getmtime(cedict_dbfile) > 86400:
 		print("正在更新字典。")
-		os.remove(cedict_dbfile)
 		if os.path.exists(cedict_zipfile):
 			os.remove(cedict_zipfile)
 			if os.path.exists(cedict_member):

@@ -4,6 +4,37 @@ import os
 import json
 import sqlite3
 
+def load_zipart():
+	zi_parts = {}
+	with open(os.path.join("ids_db", "ids_lv2.txt"), "r", encoding="utf-8") as fr:
+		for line in fr:
+			line = line.strip()
+			if line[0] == '#': continue
+			zi, ids = line.split('\t', 1)
+			ids = ids.replace(';', '\t')
+			ids = ids.replace('⿰', '')
+			ids = ids.replace('⿱', '')
+			ids = ids.replace('⿲', '')
+			ids = ids.replace('⿳', '')
+			ids = ids.replace('⿴', '')
+			ids = ids.replace('⿵', '')
+			ids = ids.replace('⿶', '')
+			ids = ids.replace('⿷', '')
+			ids = ids.replace('⿼', '')
+			ids = ids.replace('⿸', '')
+			ids = ids.replace('⿹', '')
+			ids = ids.replace('⿺', '')
+			ids = ids.replace('⿽', '')
+			ids = ids.replace('⿻', '')
+			ids = ids.replace('⿿', '')
+			ids = ids.replace('⿾', '')
+			ids = ids.split('\t')
+			try:
+				zi_parts[zi] += ids
+			except KeyError:
+				zi_parts[zi] = ids
+	return zi_parts
+
 if __name__ == '__main__':
 	os.chdir(os.path.dirname(os.path.realpath(__file__)))
 	ctdict = {}
@@ -68,35 +99,6 @@ if __name__ == '__main__':
 			cedict_maxkeylen = max(cedict_maxkeylen, len(sc))
 			tedict_maxkeylen = max(tedict_maxkeylen, len(tc))
 
-	zi_parts = {}
-	with open(os.path.join("ids_db", "ids_lv2.txt"), "r", encoding="utf-8") as fr:
-		for line in fr:
-			line = line.strip()
-			if line[0] == '#': continue
-			zi, ids = line.split('\t', 1)
-			ids = ids.replace(';', '\t')
-			ids = ids.replace('⿰', '')
-			ids = ids.replace('⿱', '')
-			ids = ids.replace('⿲', '')
-			ids = ids.replace('⿳', '')
-			ids = ids.replace('⿴', '')
-			ids = ids.replace('⿵', '')
-			ids = ids.replace('⿶', '')
-			ids = ids.replace('⿷', '')
-			ids = ids.replace('⿼', '')
-			ids = ids.replace('⿸', '')
-			ids = ids.replace('⿹', '')
-			ids = ids.replace('⿺', '')
-			ids = ids.replace('⿽', '')
-			ids = ids.replace('⿻', '')
-			ids = ids.replace('⿿', '')
-			ids = ids.replace('⿾', '')
-			ids = ids.split('\t')
-			try:
-				zi_parts[zi] += ids
-			except KeyError:
-				zi_parts[zi] = ids
-
 	with open("cedict.json", "w", encoding="utf-8") as fw:
 		json.dump(cedict, fw, indent=4, ensure_ascii=False)
 
@@ -105,12 +107,22 @@ if __name__ == '__main__':
 
 	con = sqlite3.connect("madtran.db")
 	cur = con.cursor()
+	cur.execute("DROP TABLE IF EXISTS ctdict")
+	cur.execute("DROP TABLE IF EXISTS cedict")
+	cur.execute("DROP TABLE IF EXISTS tedict")
+	cur.execute("DROP TABLE IF EXISTS firstchars")
+	cur.execute("DROP TABLE IF EXISTS metadata")
 	cur.execute("CREATE TABLE ctdict(tc TEXT PRIMARY KEY NOT NULL, sc TEXT NOT NULL)")
 	cur.execute("CREATE TABLE cedict(sc TEXT PRIMARY KEY NOT NULL, scdata TEXT NOT NULL)")
 	cur.execute("CREATE TABLE tedict(tc TEXT PRIMARY KEY NOT NULL, tcdata TEXT NOT NULL)")
-	cur.execute("CREATE TABLE zipart(zi TEXT PRIMARY KEY NOT NULL, ids TEXT NOT NULL)")
 	cur.execute("CREATE TABLE firstchars(chr TEXT PRIMARY KEY NOT NULL)")
 	cur.execute("CREATE TABLE metadata(key TEXT PRIMARY KEY NOT NULL, value INT NOT NULL)")
+	tables = set(cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall())
+	if "zipart" not in tables:
+		cur.execute("CREATE TABLE zipart(zi TEXT PRIMARY KEY NOT NULL, ids TEXT NOT NULL)")
+		zi_parts = load_zipart()
+		for zi, ids in zi_parts.items():
+			cur.execute("INSERT INTO zipart(zi, ids) VALUES(?,?)", (zi, '\t'.join(ids)))
 	for tc, sc in ctdict.items():
 		cur.execute("INSERT INTO ctdict(tc,sc) VALUES(?,?)", (tc, '\n'.join(list(sc))))
 	splitter = '/'
@@ -120,8 +132,6 @@ if __name__ == '__main__':
 		cur.execute("INSERT INTO tedict(tc,tcdata) VALUES(?,?)", (tc, '\n'.join([f'{k}\t{splitter.join(v)}' for k, v in tcdata.items()])))
 	for ch in firstchars:
 		cur.execute("INSERT INTO firstchars(chr) VALUES(?)", (ch))
-	for zi, ids in zi_parts.items():
-		cur.execute("INSERT INTO zipart(zi, ids) VALUES(?,?)", (zi, '\t'.join(ids)))
 	cur.execute("INSERT INTO metadata(key,value) VALUES(?,?)", ('cedict_maxkeylen', cedict_maxkeylen))
 	cur.execute("INSERT INTO metadata(key,value) VALUES(?,?)", ('tedict_maxkeylen', tedict_maxkeylen))
 	con.commit()
