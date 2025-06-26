@@ -620,11 +620,13 @@ def madtran(text, **kwargs):
 		# 过滤标点符号等字典里没有的东西
 		if text[0] not in firstchars and text[0] not in fccr:
 			if text[0] not in zipart:
+				# 英文或者标点符号等，直接略过
 				word = text[0]
 				trans += [(word, full2half(word))]
 				text = text[1:]
 				continue
 			else:
+				# 丈育发生——字典里没有这个字，但是 IDS 数据库里有，那就拆字！
 				unknown = text[0]
 				dismantle = random.choice(zipart[unknown])
 				dismantle = remove_parenthesis(dismantle, '()')
