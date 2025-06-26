@@ -47,15 +47,16 @@ AI 语法纠正器使用的是 `Caribe` 方案，因此：
 
 输出内容：
 
-	正在加载字典。
-	正在进行AI纠正。
+	正在进行莽夫式翻译。
+	已完成莽夫式翻译。
 	原文：测试翻译的句子
-	原始结果：
-	测试 -> test|翻译 -> to translate|的 -> of|句子 -> sentence
+	莽夫式翻译结果：
+	测试 -> a test|翻译 -> interpretation|的 -> of|句子 -> sentence
 	AI语法纠正：
-	纠正前：test to translate of sentence
-	纠正后：Test to translate of sentence.
-	谷歌翻译：测试以翻译句子。
+	纠正前：a test interpretation of sentence.
+	谷歌翻译：句子的测试解释。
+	正在对生成的英文句子进行 AI 纠正。
+	纠正后结果与纠正前一致。
 
 运行：
 
@@ -63,15 +64,16 @@ AI 语法纠正器使用的是 `Caribe` 方案，因此：
 
 输出内容：
 
-	正在加载字典。
-	扩展查询：啊 -> 啊哟、啊呀、啊喲
-	正在进行AI纠正。
+	正在进行莽夫式翻译。
+	已完成莽夫式翻译。
 	原文：几号抽签啊
-	原始结果：
-	几号 -> heroin|抽签 -> to perform divination with sticks|啊 -> My goodness!
+	莽夫式翻译结果：
+	几号 -> heroin|抽签 -> perform divination with sticks|啊 -> My goodness!
 	AI语法纠正：
-	纠正前：heroin to perform divination with sticks My goodness!
-	纠正后：Hero to perform divination with sticks My goodness!
+	纠正前：heroin perform divination with sticks My goodness!
+	谷歌翻译：海洛因用棍子表演占卜！
+	正在对生成的英文句子进行 AI 纠正。
+	纠正后：Hero performs divination with sticks My goodness!
 	谷歌翻译：英雄用棍棒表演占卜！
 
 运行：
@@ -80,15 +82,16 @@ AI 语法纠正器使用的是 `Caribe` 方案，因此：
 
 输出内容：
 
-	正在加载字典。
-	正在进行AI纠正。
+	正在进行莽夫式翻译。
+	已完成莽夫式翻译。
 	原文：草草草
-	原始结果：
-	草草 -> hastily|草 -> manuscript
+	莽夫式翻译结果：
+	草草 -> carelessly|草 -> manuscript
 	AI语法纠正：
-	纠正前：hastily manuscript
-	纠正后：A strange manuscript.
-	谷歌翻译：一个奇怪的手稿。
+	纠正前：carelessly manuscript.
+	谷歌翻译：粗心的手稿。
+	正在对生成的英文句子进行 AI 纠正。
+	纠正后结果与纠正前一致。
 
 运行：
 
@@ -96,12 +99,14 @@ AI 语法纠正器使用的是 `Caribe` 方案，因此：
 
 输出内容：
 
-	正在加载字典。
-	正在进行AI纠正。
+	正在进行莽夫式翻译。
+	已完成莽夫式翻译。
 	原文：我倒是不懂那些东西
-	原始结果：
-	我 -> me|倒是 -> contrary to what one might expect|不 -> no|懂 -> to understand|那些 -> those|东西 -> east and west
+	莽夫式翻译结果：
+	我 -> I|倒是 -> contrariwise|不 -> not so|懂 -> comprehend|那些 -> those|东西 -> east and west
 	AI语法纠正：
-	纠正前：me contrary to what one might expect no to understand those east and west
-	纠正后：Contrary to what one might expect, I am not going to understand those east and west.
-	谷歌翻译：与人们的期望相反，我不会理解那些东西方。
+	纠正前：I contrariwise not so comprehend those east and west.
+	谷歌翻译：相反，我不太了解那些东西方。
+	正在对生成的英文句子进行 AI 纠正。
+	纠正后：I contrariwise do not comprehend those east and west.
+	谷歌翻译：相反，我不理解那些东西方。
