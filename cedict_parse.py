@@ -117,12 +117,16 @@ if __name__ == '__main__':
 	cur.execute("CREATE TABLE tedict(tc TEXT PRIMARY KEY NOT NULL, tcdata TEXT NOT NULL)")
 	cur.execute("CREATE TABLE firstchars(chr TEXT PRIMARY KEY NOT NULL)")
 	cur.execute("CREATE TABLE metadata(key TEXT PRIMARY KEY NOT NULL, value INT NOT NULL)")
-	tables = set(cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall())
-	if "zipart" not in tables:
+	try:
 		cur.execute("CREATE TABLE zipart(zi TEXT PRIMARY KEY NOT NULL, ids TEXT NOT NULL)")
 		zi_parts = load_zipart()
 		for zi, ids in zi_parts.items():
 			cur.execute("INSERT INTO zipart(zi, ids) VALUES(?,?)", (zi, '\t'.join(ids)))
+	except sqlite3.OperationalError as e:
+		if str(e) == 'table zipart already exists':
+			pass
+		else:
+			raise e
 	for tc, sc in ctdict.items():
 		cur.execute("INSERT INTO ctdict(tc,sc) VALUES(?,?)", (tc, '\n'.join(list(sc))))
 	splitter = '/'
