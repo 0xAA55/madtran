@@ -177,7 +177,7 @@ unwant_checkers = [
 	'used before ',
 	'abbr. ',
 	'[', ']', '|',
-	'classifier ',
+	'classifier',
 	'interjection of ',
 	'Kangxi radical ',
 	'radical in Chinese',
