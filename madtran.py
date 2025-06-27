@@ -52,6 +52,7 @@ if __name__ == '__main__':
 	cedict_srcfile = makepath("cedict.txt")
 	cedict_dbfile = makepath("madtran.db")
 	cedict_parser = makepath("cedict_parse.py")
+	cedict_updated = False;
 	if os.path.exists(cedict_zipfile) and time.time() - os.path.getmtime(cedict_zipfile) > 86400:
 		print("正在更新字典。")
 		if os.path.exists(cedict_zipfile):
@@ -93,10 +94,12 @@ if __name__ == '__main__':
 		with zipfile.ZipFile(cedict_zipfile, 'r') as z:
 			z.extract(cedict_member)
 		os.rename(cedict_member, cedict_srcfile)
+		cedict_updated = True
 
-	import subprocess
-	print("正在解析CEDict")
-	subprocess.run([sys.executable, cedict_parser, cedict_dbfile])
+	if cedict_updated:
+		import subprocess
+		print("正在解析CEDict")
+		subprocess.run([sys.executable, cedict_parser, cedict_dbfile])
 
 import sqlite3
 con = sqlite3.connect(cedict_dbfile)
