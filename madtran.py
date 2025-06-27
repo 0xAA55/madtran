@@ -613,8 +613,9 @@ def madtran(text, **kwargs):
 			dismantle = random.choice(zipart[ch])
 			dismantle = remove_parenthesis(dismantle, '()')
 			dismantle = remove_parenthesis(dismantle, '{}')
+			dismantle = dismantle.replace('#', '')
 			dismantle = dismantle.strip()
-			if dismantle == '#':
+			if len(dismantle) == 0:
 				return ch
 			else:
 				return dismantle
