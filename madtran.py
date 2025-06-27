@@ -52,7 +52,7 @@ if __name__ == '__main__':
 	cedict_srcfile = makepath("cedict.txt")
 	cedict_dbfile = makepath("madtran.db")
 	cedict_parser = makepath("cedict_parse.py")
-	if os.path.exists(cedict_dbfile) and time.time() - os.path.getmtime(cedict_dbfile) > 86400:
+	if os.path.exists(cedict_zipfile) and time.time() - os.path.getmtime(cedict_zipfile) > 86400:
 		print("正在更新字典。")
 		if os.path.exists(cedict_zipfile):
 			os.remove(cedict_zipfile)
