@@ -61,43 +61,42 @@ if __name__ == '__main__':
 				if os.path.exists(cedict_srcfile):
 					os.remove(cedict_srcfile)
 
-	if not os.path.exists(cedict_dbfile):
-		if not os.path.exists(cedict_zipfile):
-			import requests
-			if USE_PROXY:
-				proxies = {
-					"http": HTTP_PROXY,
-					"https": HTTPS_PROXY
-				}
-				resp = None
-				try:
-					resp = requests.get(cedict_url, proxies=proxies)
-				except requests.exceptions.ConnectionError as ec:
-					print("下载中英字典过程中发生代理连接失败，尝试无代理连接。")
-			if resp is None:
-				try:
-					resp = requests.get(cedict_url)
-				except:
-					print("下载中英字典失败，HTTP连接失败。")
-					exit()
-			if 200 <= resp.status_code < 300:
-				print("下载字典成功。")
-				with open(cedict_zipfile, 'wb') as f:
-					resp.raw.decode_content = True
-					f.write(resp.content)
-			else:
-				print(f"下载字典失败：{resp.status_code}：{resp.content}")
+	if not os.path.exists(cedict_zipfile):
+		import requests
+		if USE_PROXY:
+			proxies = {
+				"http": HTTP_PROXY,
+				"https": HTTPS_PROXY
+			}
+			resp = None
+			try:
+				resp = requests.get(cedict_url, proxies=proxies)
+			except requests.exceptions.ConnectionError as ec:
+				print("下载中英字典过程中发生代理连接失败，尝试无代理连接。")
+		if resp is None:
+			try:
+				resp = requests.get(cedict_url)
+			except:
+				print("下载中英字典失败，HTTP连接失败。")
 				exit()
+		if 200 <= resp.status_code < 300:
+			print("下载字典成功。")
+			with open(cedict_zipfile, 'wb') as f:
+				resp.raw.decode_content = True
+				f.write(resp.content)
+		else:
+			print(f"下载字典失败：{resp.status_code}：{resp.content}")
+			exit()
 
-		if not os.path.exists(cedict_srcfile):
-			import zipfile
-			with zipfile.ZipFile(cedict_zipfile, 'r') as z:
-				z.extract(cedict_member)
-			os.rename(cedict_member, cedict_srcfile)
+	if not os.path.exists(cedict_srcfile):
+		import zipfile
+		with zipfile.ZipFile(cedict_zipfile, 'r') as z:
+			z.extract(cedict_member)
+		os.rename(cedict_member, cedict_srcfile)
 
-		import subprocess
-		print("正在解析CEDict")
-		subprocess.run([sys.executable, cedict_parser, cedict_dbfile])
+	import subprocess
+	print("正在解析CEDict")
+	subprocess.run([sys.executable, cedict_parser, cedict_dbfile])
 
 import sqlite3
 con = sqlite3.connect(cedict_dbfile)
