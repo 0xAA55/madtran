@@ -608,6 +608,18 @@ def madtran(text, **kwargs):
 			return bool(kwargs[keyword])
 		except KeyError:
 			return False
+	def do_dismantle(ch):
+		try:
+			dismantle = random.choice(zipart[ch])
+			dismantle = remove_parenthesis(dismantle, '()')
+			dismantle = remove_parenthesis(dismantle, '{}')
+			dismantle = dismantle.strip()
+			if dismantle == '#':
+				return ch
+			else:
+				return dismantle
+		except KeyError:
+			return ch
 	# 根据可能的词语长度，截取输入的句子来查字典找释义。
 	if check_bool_kwargs("by-char"):
 		search_range = range(cedict_maxkeylen + 1)
@@ -616,6 +628,13 @@ def madtran(text, **kwargs):
 		search_range += list(range(max(search_range) + 1, cedict_maxkeylen + 1))
 	trans = []
 	text = text.replace('\n', ' ')
+	# 如果用户要求拆字，则先拆字再翻译
+	if check_bool_kwargs("dismantle"):
+		dismantled = ""
+		while len(text):
+			dismantled += do_dismantle(text[0])
+			text = text[1:]
+		text = dismantled
 	while len(text):
 		# 过滤标点符号等字典里没有的东西
 		if text[0] not in firstchars and text[0] not in fccr:
@@ -628,11 +647,8 @@ def madtran(text, **kwargs):
 			else:
 				# 丈育发生——字典里没有这个字，但是 IDS 数据库里有，那就拆字！
 				unknown = text[0]
-				dismantle = random.choice(zipart[unknown])
-				dismantle = remove_parenthesis(dismantle, '()')
-				dismantle = remove_parenthesis(dismantle, '{}')
-				dismantle = dismantle.strip()
-				if dismantle == '#':
+				dismantle = do_dismantle(unknown)
+				if dismantle == unknown:
 					word = unknown
 					trans += [(word, full2half(word))]
 					text = text[1:]
@@ -733,6 +749,7 @@ if __name__ == '__main__':
 		print("  --help：显示此帮助")
 		print("  --shortest：选用最短候选词")
 		print("  --longest：选用最长候选词")
+		print("  --dismantle：强制对每个输入的汉字进行莽夫式拆解")
 		print("  --no-ai：不进行AI修正")
 		print("  --no-pinyin：不进行拼音语素检查")
 		print("  --verbose：显示查询的具体过程")
