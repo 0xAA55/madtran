@@ -747,7 +747,7 @@ if __name__ == '__main__':
 	from httpcore import SyncHTTPProxy
 
 	def usage():
-		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--verbose] [--by-char] [--only-result] [--only-ai-result] [--only-result-tb] [--only-ai-result-tb] [--custom-rules=a:b,c:d] <中文内容>")
+		print("用法：madtran [--shortest|--longest] [--no-ai] [--no-pinyin] [--verbose] [--by-char] [--dismantle] [--only-result] [--only-ai-result] [--only-result-tb] [--only-ai-result-tb] [--custom-rules=a:b,c:d] <中文内容>")
 		print("参数：")
 		print("  --help：显示此帮助")
 		print("  --shortest：选用最短候选词")
