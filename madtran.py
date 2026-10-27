@@ -894,7 +894,10 @@ if __name__ == '__main__':
 		if not clean_output:
 			print("AI语法纠正：")
 			print(f"纠正前：{result_string}")
-			print(f"谷歌翻译：{translated_nc}")
+			if translated_nc == text:
+				print('谷歌翻译的结果和原文一致。')
+			else:
+				print(f"谷歌翻译：{translated_nc}")
 			print("正在对生成的英文句子进行 AI 纠正。")
 
 		corrected = get_corrected(result_string)
@@ -907,12 +910,18 @@ if __name__ == '__main__':
 			exit()
 		if result_string.lower() != corrected.lower() and translated_nc != translated_co:
 			print(f"纠正后：{corrected}")
-			print(f"谷歌翻译：{translated_co}")
+			if translated_co == text:
+				print('谷歌翻译的结果和原文一致。')
+			else:
+				print(f"谷歌翻译：{translated_co}")
 		else:
 			print("纠正后结果与纠正前一致。")
 	else:
 		print(f"生成句子：{result_string}")
-		print(f"谷歌翻译：{translated_nc}")
+		if translated_nc == text:
+			print('谷歌翻译的结果和原文一致。')
+		else:
+			print(f"谷歌翻译：{translated_nc}")
 
 	unchecked_options = set(options.keys()) - checked_options
 	if len(unchecked_options):
