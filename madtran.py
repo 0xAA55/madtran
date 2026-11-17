@@ -894,7 +894,7 @@ if __name__ == '__main__':
 		if not clean_output:
 			print("AI语法纠正：")
 			print(f"纠正前：{result_string}")
-			if translated_nc == text:
+			if translated_nc == text or translated_nc == f'{text}。':
 				print('谷歌翻译的结果和原文一致。')
 			else:
 				print(f"谷歌翻译：{translated_nc}")
@@ -910,7 +910,7 @@ if __name__ == '__main__':
 			exit()
 		if result_string.lower() != corrected.lower() and translated_nc != translated_co:
 			print(f"纠正后：{corrected}")
-			if translated_co == text:
+			if translated_co == text or translated_co == f'{text}。':
 				print('谷歌翻译的结果和原文一致。')
 			else:
 				print(f"谷歌翻译：{translated_co}")
@@ -918,7 +918,7 @@ if __name__ == '__main__':
 			print("纠正后结果与纠正前一致。")
 	else:
 		print(f"生成句子：{result_string}")
-		if translated_nc == text:
+		if translated_nc == text or translated_nc == f'{text}。':
 			print('谷歌翻译的结果和原文一致。')
 		else:
 			print(f"谷歌翻译：{translated_nc}")
